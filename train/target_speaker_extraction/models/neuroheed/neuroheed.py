@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import TransformerEncoder, TransformerEncoderLayer
+from gumbel import SelectionLayer
 import math
 
 
@@ -20,6 +21,8 @@ class neuroheed(nn.Module):
         self.encoder = Encoder(self.L, self.N)
         self.separator = rnn(self.args, self.N, self.B, self.H, self.K, self.R)
         self.decoder = Decoder(self.N, self.L)
+        if args.gumbel_selection:
+            self.selection_layer = SelectionLayer(args.B, args.gumbel_selection)
 
         for p in self.parameters():
             if p.dim() > 1:

@@ -1,15 +1,18 @@
 #!/bin/sh
+cd /Users/kiran/Documents_local/ASPIRE/ClearerVoice-Studio/train/target_speaker_extraction
 
 #####
 # Modify these lines
 gpu_id=0,1													# Visible GPUs
-n_gpu=2														# Number of GPU used for training
-checkpoint_dir=''											# Leave empty if it's a new training, otherwise provide the name as 'checkpoints/log_...'
-config_pth=config/config_LRS2_lip_dprnn_2spk.yaml			# The config file, only used if it's a new training
+n_gpu=1														# Number of GPU used for training
+checkpoint_dir=''									# Leave empty if it's a new training, otherwise provide the name as 'checkpoints/log_...'
+config_pth=config/config_DTU_Raw_eeg_neuroheed_2spk.yaml		# The config file, only used if it's a new training
 #####
 
 
 # create checkpoint log folder
+eval "$(conda shell.bash hook)"
+conda activate aspire
 if [ -z ${checkpoint_dir} ]; then
 	checkpoint_dir='checkpoints/log_'$(date '+%Y-%m-%d(%H:%M:%S)')
 	train_from_last_checkpoint=0

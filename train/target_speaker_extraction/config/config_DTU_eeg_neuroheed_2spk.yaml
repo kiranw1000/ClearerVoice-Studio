@@ -6,11 +6,11 @@ use_cuda: 0           # 1 for True, 0 for False
 
 # dataset
 speaker_no: 2
-mix_lst_path: ./data/KUL/mixture_data_list_2mix.csv
-audio_direc: ./data/KUL/audio_8k/
-reference_direc: ./data/KUL/eeg/
-audio_sr: 8000
-ref_sr: 128         # reference sampleing rate, lip: 25 , gesture: 15, eeg: 128
+mix_lst_path: ./data/DTU/mixture_data_list_2mix.csv
+audio_direc: ./data/DTU/audio_8k/
+reference_direc: ./data/DTU/eeg/
+audio_sr: 44100
+ref_sr: 512         # reference sampleing rate, lip: 25 , gesture: 15, eeg: 128
 
 # dataloader
 num_workers: 8
@@ -28,7 +28,7 @@ network_audio:
   backbone: neuroheed
   N: 256
   L: 20
-  B: 64
+  B: 66
   H: 128
   K: 100
   R: 6

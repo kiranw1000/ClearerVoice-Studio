@@ -102,6 +102,9 @@ if __name__ == '__main__':
     parser.add_argument('--speaker_no', type=int)
     parser.add_argument('--audio_sr',  type=int, help='audio sampling_rate')
     parser.add_argument('--ref_sr',  type=int, help='reference signal sampling_rate')
+    parser.add_argument('--gumbel_selection', type=int, default=False, help='whether to use gumbel selection layer')
+    parser.add_argument('--subjects', type=int, default=18, help='number of subjects')
+    parser.add_argument('--trials', type=int, default=60, help='number of trials per subject')
 
     # Distributed training
     parser.add_argument("--local-rank", default=0, type=int)

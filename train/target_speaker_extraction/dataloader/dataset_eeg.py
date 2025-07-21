@@ -61,8 +61,8 @@ class dataset_eeg(data.Dataset):
             start = end
 
         self.eeg_dict={}
-        for subject in range(1,17):
-            for trial in range(1,9):
+        for subject in range(1,args.subjects+1):
+            for trial in range(1,args.trials+1):
                 eeg_path = f'{self.eeg_direc}S{subject}Tra{trial}.npy'
                 eeg_data = np.load(eeg_path)
                 self.eeg_dict[(subject,trial)] = eeg_data
