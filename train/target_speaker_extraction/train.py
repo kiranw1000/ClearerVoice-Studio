@@ -1,5 +1,6 @@
 import yamlargparse, os, random
 import numpy as np
+from models.neuroheed.gumbel import SelectionLayer
 import torch
 
 from dataloader.dataloader import dataloader_wrapper
