@@ -1,5 +1,4 @@
 #!/bin/sh
-cd /Users/kiran/Documents_local/ASPIRE/ClearerVoice-Studio/train/target_speaker_extraction
 
 #####
 # Modify these lines
