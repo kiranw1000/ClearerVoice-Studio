@@ -1,0 +1,17 @@
+librosa
+soundfile
+opencv-python
+mir_eval
+numpy
+yamlargparse
+scipy
+tqdm
+pesq
+pystoi
+tensorboard
+torch-complex
+rotary-embedding-torch
+python_speech_features
+typeguard
+huggingface-hub
+gdown
