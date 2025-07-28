@@ -96,14 +96,14 @@ class dataset_eeg(data.Dataset):
             start = float(line[4]) * self.audio_sr
             end = start + min_length_audio
             a_tgt, _ = sf.read(tgt_audio_path, start=int(start), stop=int(end), dtype='float32')
-            print(tgt_audio_path)
+            print(f"Target audio path: {tgt_audio_path}, Start: {start}, End: {end}")
 
             # load int eeg
             int_audio_path = self.audio_direc + line[6]
             start = float(line[7]) * self.audio_sr
             end = start + min_length_audio
             a_int, _ = sf.read(int_audio_path, start=int(start), stop=int(end), dtype='float32')
-            print(int_audio_path)
+            print(f"Interference audio path: {int_audio_path}, Start: {start}, End: {end}")
 
             # training snr augmentation
             if float(line[8]) != 0:
