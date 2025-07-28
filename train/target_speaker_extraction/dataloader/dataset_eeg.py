@@ -76,9 +76,11 @@ class dataset_eeg(data.Dataset):
         
         batch_lst = self.minibatch[index]
         min_length_second = float(batch_lst[-1].split(',')[-1])      # truncate to the shortest utterance in the batch
+        print(f"Batch {index}, Min length second: {min_length_second}")
         min_length_eeg = math.floor(min_length_second*self.ref_sr)
         min_length_audio = math.floor(min_length_second*self.audio_sr)
         min_length_eeg = min(min_length_eeg, self.max_length*self.ref_sr)
+        print(f"Max audio length calc:{self.max_length*self.audio_sr}")
         min_length_audio = min(min_length_audio, self.max_length*self.audio_sr)
 
         for line_cache in batch_lst:
