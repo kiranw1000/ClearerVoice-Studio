@@ -6,6 +6,8 @@ import torch
 from dataloader.dataloader import dataloader_wrapper
 from solver import Solver
 
+import soundfile as sf
+
 
 def main(args):
     random.seed(args.seed)
@@ -44,7 +46,9 @@ def main(args):
     args.train_sampler=train_sampler
     print("Loaded data generators")
     
-    train_generator.dataset.__getitem__(0)
+    sf.read("/users/PAS2912/wijesooriya/ASPIRE/DTU_data/DTU/data/DTU/audiomarianne_story3_trial_1.wav")
+    
+    # train_generator.dataset.__getitem__(0)
 
 
     # solver = Solver(args=args,
