@@ -42,7 +42,7 @@ def main(args):
     _, test_generator = dataloader_wrapper(args, 'test')
     args.train_sampler=train_sampler
     
-    train_generator.__getitem__(0)
+    train_generator.dataset.__getitem__(0)
 
 
     # solver = Solver(args=args,
