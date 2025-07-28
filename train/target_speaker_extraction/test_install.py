@@ -46,7 +46,7 @@ def main(args):
     args.train_sampler=train_sampler
     print("Loaded data generators")
     
-    sf.read("/users/PAS2912/wijesooriya/ASPIRE/DTU_data/DTU/data/DTU/audiomarianne_story3_trial_1.wav")
+    sf.read("/users/PAS2912/wijesooriya/ASPIRE/DTU_data/DTU/data/DTU/audio/marianne_story3_trial_1.wav")
     
     # train_generator.dataset.__getitem__(0)
 
