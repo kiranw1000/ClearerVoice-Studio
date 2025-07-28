@@ -118,6 +118,7 @@ class dataset_eeg(data.Dataset):
             a_mix = a_tgt + a_int
 
             # audio normalization
+            print(a_mix.shape, a_tgt.shape, eeg_tgt.shape)
             max_val = np.max(np.abs(a_mix))
             if max_val > 1:
                 a_mix /= max_val
