@@ -24,6 +24,8 @@ fi
 yaml_name=log_$(date '+%Y-%m-%d(%H:%M:%S)')
 cat $config_pth > ${checkpoint_dir}/${yaml_name}.txt
 
+echo $config_pth > ${checkpoint_dir}/${yaml_name}.txt
+
 # call training
 export PYTHONWARNINGS="ignore"
 CUDA_VISIBLE_DEVICES="$gpu_id" \
