@@ -31,7 +31,7 @@ python -W ignore \
 -m torch.distributed.launch \
 --nproc_per_node=$n_gpu \
 --master_port=$(date '+88%S') \
-train.py \
+test_install.py \
 --config $config_pth \
 --checkpoint_dir $checkpoint_dir \
 --train_from_last_checkpoint $train_from_last_checkpoint \
