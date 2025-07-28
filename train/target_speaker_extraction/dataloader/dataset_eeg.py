@@ -76,11 +76,9 @@ class dataset_eeg(data.Dataset):
         
         batch_lst = self.minibatch[index]
         min_length_second = float(batch_lst[-1].split(',')[-1])      # truncate to the shortest utterance in the batch
-        print(f"Batch {index}, Min length second: {min_length_second}")
         min_length_eeg = math.floor(min_length_second*self.ref_sr)
         min_length_audio = math.floor(min_length_second*self.audio_sr)
         min_length_eeg = min(min_length_eeg, self.max_length*self.ref_sr)
-        print(f"Max audio length calc:{self.max_length*self.audio_sr}")
         min_length_audio = min(min_length_audio, self.max_length*self.audio_sr)
 
         for line_cache in batch_lst:
@@ -98,14 +96,12 @@ class dataset_eeg(data.Dataset):
             start = float(line[4]) * self.audio_sr
             end = start + min_length_audio
             a_tgt, _ = sf.read(tgt_audio_path, start=int(start), stop=int(end), dtype='float32')
-            print(f"Target audio path: {tgt_audio_path}, Start: {start}, End: {end}")
 
             # load int eeg
             int_audio_path = self.audio_direc + line[6]
             start = float(line[7]) * self.audio_sr
             end = start + min_length_audio
             a_int, _ = sf.read(int_audio_path, start=int(start), stop=int(end), dtype='float32')
-            print(f"Interference audio path: {int_audio_path}, Start: {start}, End: {end}")
 
             # training snr augmentation
             if float(line[8]) != 0:
