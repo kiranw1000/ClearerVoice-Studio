@@ -36,11 +36,13 @@ def main(args):
         print("\nTotal number of trainable parameters: {} \n".format(sum(p.numel() for p in model.parameters() if p.requires_grad)))
     
     optimizer = torch.optim.Adam(model.parameters(), lr=args.init_learning_rate)
+    print("Loaded optimizer")
 
     train_sampler, train_generator = dataloader_wrapper(args,'train')
     _, val_generator = dataloader_wrapper(args, 'val')
     _, test_generator = dataloader_wrapper(args, 'test')
     args.train_sampler=train_sampler
+    print("Loaded data generators")
     
     train_generator.dataset.__getitem__(0)
 
