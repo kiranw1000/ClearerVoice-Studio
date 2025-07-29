@@ -356,6 +356,7 @@ def overlap_and_add(signal, frame_step):
     frame = frame.contiguous().view(-1)
 
     result = signal.new_zeros(*outer_dimensions, output_subframes, subframe_length)
+    result.to(signal.device)  # Ensure result is on the same device as signal
     result.index_add_(-2, frame, subframe_signal)
     result = result.view(*outer_dimensions, -1)
     return result
