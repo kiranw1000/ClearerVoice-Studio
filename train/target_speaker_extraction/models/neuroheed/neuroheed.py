@@ -30,6 +30,7 @@ class neuroheed(nn.Module):
 
     def forward(self, mixture, eeg, reference=None):
         eeg = eeg.to(self.args.device)
+        mixture = mixture.to(self.args.device)
 
         mixture_w = self.encoder(mixture)
         est_mask = self.separator(mixture_w, eeg, reference, mixture)
