@@ -171,8 +171,8 @@ class rnn(nn.Module):
         self.mask_conv1x1 = nn.Conv1d(B, N, 1, bias=False)
 
 
-        self.po_encoding = PositionalEncodingOdd(d_model=64)
-        encoder_layers = TransformerEncoderLayer(d_model=64, nhead=1, dim_feedforward=64*4)
+        self.po_encoding = PositionalEncodingOdd(d_model=B)
+        encoder_layers = TransformerEncoderLayer(d_model=B, nhead=1, dim_feedforward=B*4)
         self.eeg_net = TransformerEncoder(encoder_layers, num_layers=5)
         self.fusion = nn.Conv1d(B+64, B, 1, bias=False)
 
