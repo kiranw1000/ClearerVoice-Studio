@@ -34,6 +34,8 @@ class neuroheed(nn.Module):
 
         mixture_w = self.encoder(mixture)
         est_mask = self.separator(mixture_w, eeg, reference, mixture)
+        est_mask = est_mask.to(self.args.device)
+        mixture_w = mixture_w.to(self.args.device)
         est_source = self.decoder(mixture_w, est_mask)
 
         # T changed after conv1d in encoder, fix it here
