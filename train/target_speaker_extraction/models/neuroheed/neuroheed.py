@@ -350,13 +350,15 @@ def overlap_and_add(signal, frame_step):
     output_subframes = output_size // subframe_length
 
     subframe_signal = signal.view(*outer_dimensions, -1, subframe_length)
+    subframe_signal = subframe_signal.to(signal.device)  # Ensure subframe_signal is on the same device as signal
 
     frame = torch.arange(0, output_subframes).unfold(0, subframes_per_frame, subframe_step)
     frame = signal.new_tensor(frame).long().cuda()  # signal may in GPU or CPU
     frame = frame.contiguous().view(-1)
+    frame = frame.to(signal.device)  # Ensure frame is on the same device as signal
 
     result = signal.new_zeros(*outer_dimensions, output_subframes, subframe_length)
-    result.to(signal.device)  # Ensure result is on the same device as signal
+    result = result.to(signal.device)  # Ensure result is on the same device as signal
     result.index_add_(-2, frame, subframe_signal)
     result = result.view(*outer_dimensions, -1)
     return result
