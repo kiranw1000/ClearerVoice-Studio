@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import TransformerEncoder, TransformerEncoderLayer
-from models.neuroheed.gumbel import SelectionLayer
+from gumbel import SelectionLayer
 import math
 
 
@@ -171,7 +171,7 @@ class rnn(nn.Module):
         self.mask_conv1x1 = nn.Conv1d(B, N, 1, bias=False)
 
 
-        self.po_encoding = PositionalEncoding(d_model=64)
+        self.po_encoding = PositionalEncodingOdd(d_model=64)
         encoder_layers = TransformerEncoderLayer(d_model=64, nhead=1, dim_feedforward=64*4)
         self.eeg_net = TransformerEncoder(encoder_layers, num_layers=5)
         self.fusion = nn.Conv1d(B+64, B, 1, bias=False)
@@ -287,6 +287,31 @@ class PositionalEncoding(nn.Module):
         pe = torch.zeros(max_len, 1, d_model)
         pe[:, 0, 0::2] = torch.sin(position * div_term)
         pe[:, 0, 1::2] = torch.cos(position * div_term)
+        self.register_buffer('pe', pe)
+
+    def forward(self, x):
+        """
+        Args:
+            x: Tensor, shape [seq_len, batch_size, embedding_dim]
+        """
+        x = x + self.pe[:x.size(0)]
+        return self.dropout(x)
+    
+class PositionalEncodingOdd(nn.Module):
+    def __init__(self, d_model: int, dropout: float = 0.1, max_len: int = 5000):
+        super().__init__()
+        self.dropout = nn.Dropout(p=dropout)
+
+        position = torch.arange(max_len).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model))
+        even = lambda p,dt: torch.sin(p * dt)
+        odd = lambda p,dt: torch.cos(p * dt)
+        pe = torch.zeros(max_len, 1, d_model)
+        for i in range(0, d_model):
+            if i % 2 == 0:
+                pe[:, :, i] = even(position, div_term[i // 2])
+            else:
+                pe[:, :, i] = odd(position, div_term[i // 2])
         self.register_buffer('pe', pe)
 
     def forward(self, x):
