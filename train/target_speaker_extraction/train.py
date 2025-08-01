@@ -52,6 +52,7 @@ def main(args):
                 validation_data = val_generator,
                 test_data = test_generator
                 ) 
+    print("Start training")
     if not args.evaluate_only:
         solver.train()
 

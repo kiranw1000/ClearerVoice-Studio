@@ -108,6 +108,7 @@ class Solver(object):
             
 
     def train(self):
+        print("Training started")
         for self.epoch in range(self.start_epoch, self.args.max_epoch+1):
             if self.args.distributed: self.args.train_sampler.set_epoch(self.epoch)
             # Train
