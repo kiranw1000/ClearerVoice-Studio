@@ -21,7 +21,7 @@ def main(args):
 
     if args.distributed:
         torch.cuda.set_device(args.local_rank)
-        torch.distributed.init_process_group(backend='nccl', rank=args.local_rank, init_method='env://', world_size=args.world_size, timeout=datetime.timedelta(seconds=1800))
+        torch.distributed.init_process_group(backend='nccl', rank=args.local_rank, init_method='env://', world_size=args.world_size)
 
     from networks import network_wrapper
     model = network_wrapper(args)
