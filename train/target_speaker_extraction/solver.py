@@ -223,7 +223,7 @@ class Solver(object):
     def evaluate(self, data_loader):
         avg_sisnri = 0
         avg_sdri = 0
-        avg_pesqi = 0
+        # avg_pesqi = 0
         avg_stoii = 0
 
         self._load_model(f'{self.args.checkpoint_dir}/last_best_checkpoint.pt')
@@ -246,8 +246,8 @@ class Solver(object):
                 avg_sdri += sdri
 
                 a_tgt_est = a_tgt_est/np.max(np.abs(a_tgt_est))
-                pesqi =  (pesq(self.args.audio_sr, a_tgt, a_tgt_est, 'wb') - pesq(self.args.audio_sr, a_tgt, a_mix, 'wb'))
-                avg_pesqi += pesqi
+                # pesqi =  (pesq(self.args.audio_sr, a_tgt, a_tgt_est, 'wb') - pesq(self.args.audio_sr, a_tgt, a_mix, 'wb'))
+                # avg_pesqi += pesqi
 
                 stoii = (stoi(a_tgt, a_tgt_est, self.args.audio_sr, extended=False) - stoi(a_tgt, a_mix, self.args.audio_sr, extended=False))
                 avg_stoii += stoii
@@ -261,7 +261,7 @@ class Solver(object):
 
         print(f'Avg SISNR:i {avg_sisnri}')
         print(f'Avg SNRi: {avg_sdri}')
-        print(f'Avg PESQi: {avg_pesqi}')
+        # print(f'Avg PESQi: {avg_pesqi}')
         print(f'Avg STOIi: {avg_stoii}')
 
 
