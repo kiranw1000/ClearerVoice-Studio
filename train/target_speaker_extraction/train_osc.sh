@@ -13,7 +13,7 @@ config_pth=config.yaml		# The config file, only used if it's a new training
 eval "$(conda shell.bash hook)"
 conda activate aspire
 if [ -z ${checkpoint_dir} ]; then
-	checkpoint_dir='checkpoints/log_'$(date '+%Y-%m-%d(%H:%M:%S)')
+	checkpoint_dir='/users/PAS2912/wijesooriya/ASPIRE/ClearerVoice-Studio/train/target_speaker_extraction/checkpoints/log_'$(date '+%Y-%m-%d(%H:%M:%S)')
 	train_from_last_checkpoint=0
 	mkdir -p ${checkpoint_dir}
 	cp $config_pth ${checkpoint_dir}/config.yaml
