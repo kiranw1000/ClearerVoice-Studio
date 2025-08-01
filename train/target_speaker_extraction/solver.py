@@ -10,7 +10,6 @@ from losses.loss_function import loss_wrapper
 from losses.metrics import SDR, cal_SISNR
 from pystoi import stoi
 from pesq import pesq
-dist.init_process_group(timeout=datetime.timedelta(seconds=1800))
 
 class Solver(object):
     def __init__(self, args, model, optimizer, train_data, validation_data, test_data):

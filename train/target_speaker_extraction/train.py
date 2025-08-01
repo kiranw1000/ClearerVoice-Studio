@@ -1,7 +1,7 @@
 import yamlargparse, os, random
 import numpy as np
 from models.neuroheed.gumbel import SelectionLayer
-import torch
+import torch, datetime
 
 from dataloader.dataloader import dataloader_wrapper
 from solver import Solver
@@ -21,7 +21,7 @@ def main(args):
 
     if args.distributed:
         torch.cuda.set_device(args.local_rank)
-        torch.distributed.init_process_group(backend='nccl', rank=args.local_rank, init_method='env://', world_size=args.world_size)
+        torch.distributed.init_process_group(backend='nccl', rank=args.local_rank, init_method='env://', world_size=args.world_size, timeout=datetime.timedelta(seconds=1800))
 
     from networks import network_wrapper
     model = network_wrapper(args)
