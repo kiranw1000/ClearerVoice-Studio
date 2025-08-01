@@ -34,7 +34,7 @@ python -W ignore \
 --nproc_per_node=$n_gpu \
 --master_port=$(date '+88%S') \
 train.py \
---config ${checkpoint_dir}/config.yaml \
+--config $config_pth \
 --checkpoint_dir $checkpoint_dir \
 --train_from_last_checkpoint $train_from_last_checkpoint \
 >>${checkpoint_dir}/$yaml_name.txt 2>&1
