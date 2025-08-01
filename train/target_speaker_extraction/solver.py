@@ -1,4 +1,4 @@
-import time
+import time, datetime
 import torch
 from torch.utils.tensorboard import SummaryWriter
 import torch.nn.functional as F
@@ -29,6 +29,7 @@ class Solver(object):
         self.model = model
         self.optimizer=optimizer
         if self.args.distributed:
+            dist.init_process_group(timeout=datetime.timedelta(seconds=1800))
             self.model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(self.model)
             self.model = DDP(self.model, device_ids=[self.args.local_rank],find_unused_parameters=True)
 
