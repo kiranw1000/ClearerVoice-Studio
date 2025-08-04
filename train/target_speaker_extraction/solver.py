@@ -10,6 +10,7 @@ from losses.loss_function import loss_wrapper
 from losses.metrics import SDR, cal_SISNR
 from pystoi import stoi
 from pesq import pesq
+from scipy.signal import resample
 
 class Solver(object):
     def __init__(self, args, model, optimizer, train_data, validation_data, test_data):
@@ -246,12 +247,16 @@ class Solver(object):
                 sdri = SDR(a_tgt, a_tgt_est) - SDR(a_tgt, a_mix)
                 avg_sdri += sdri
 
+                stoii = (stoi(a_tgt, a_tgt_est, self.args.audio_sr, extended=False) - stoi(a_tgt, a_mix, self.args.audio_sr, extended=False))
+                avg_stoii += stoii
+
+                new_samples_mix = a_mix.shape[0]*16000/self.args.audio_sr
+                new_samples_tgt = a_tgt.shape[0]*16000/self.args.audio_sr
+                a_tgt = resample(a_tgt.numpy(), new_samples_tgt, axis=-1)
+                a_mix = resample(a_mix.numpy(), new_samples_mix, axis=-1)
                 a_tgt_est = a_tgt_est/np.max(np.abs(a_tgt_est))
                 pesqi =  (pesq(self.args.audio_sr, a_tgt, a_tgt_est, 'wb') - pesq(self.args.audio_sr, a_tgt, a_mix, 'wb'))
                 avg_pesqi += pesqi
-
-                stoii = (stoi(a_tgt, a_tgt_est, self.args.audio_sr, extended=False) - stoi(a_tgt, a_mix, self.args.audio_sr, extended=False))
-                avg_stoii += stoii
 
 
         avg_sisnri = avg_sisnri / (i+1)
