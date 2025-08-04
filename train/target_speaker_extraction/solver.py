@@ -35,8 +35,12 @@ class Solver(object):
             self.model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(self.model)
             print(f"[Rank {self.args.local_rank}] Model converted to SyncBatchNorm for distributed training")
             print(f"[Rank {self.args.local_rank}] About to wrap with DDP...")
-            self.model = DDP(self.model, device_ids=[self.args.local_rank],find_unused_parameters=True)
+            self.model = DDP(self.model, device_ids=[self.args.local_rank],find_unused_parameters=False)
             print(f"[Rank {self.args.local_rank}] DDP wrapper completed successfully!")
+            # Print memory usage after DDP initialization
+            if torch.cuda.is_available():
+                gpu_memory = torch.cuda.memory_allocated(self.args.local_rank) / 1024**3
+                print(f"[Rank {self.args.local_rank}] GPU memory after DDP: {gpu_memory:.2f} GB")
 
         if not self.args.evaluate_only:
             self._init()
@@ -195,6 +199,11 @@ class Solver(object):
             
             a_tgt_est = self.model(a_mix, ref_tgt)
             loss = self.loss(a_tgt, a_tgt_est)
+
+            # Monitor memory usage every 100 iterations
+            if i % 100 == 0 and self.args.distributed and self.args.local_rank == 0:
+                gpu_memory = torch.cuda.memory_allocated(self.args.device) / 1024**3
+                print(f"Iteration {i}: GPU memory usage: {gpu_memory:.2f} GB")
 
             if state=='train':
                 if self.args.accu_grad:
