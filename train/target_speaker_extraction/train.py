@@ -40,8 +40,11 @@ def main(args):
     optimizer = torch.optim.Adam(model.parameters(), lr=args.init_learning_rate)
 
     train_sampler, train_generator = dataloader_wrapper(args,'train')
+    print("Train sampler: loaded")
     _, val_generator = dataloader_wrapper(args, 'val')
+    print("Validation sampler: loaded")
     _, test_generator = dataloader_wrapper(args, 'test')
+    print("Test sampler: loaded")
     args.train_sampler=train_sampler
 
 
