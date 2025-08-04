@@ -31,9 +31,12 @@ class Solver(object):
         self.model = model
         self.optimizer=optimizer
         if self.args.distributed:
+            print(f"[Rank {self.args.local_rank}] Starting distributed setup...")
             self.model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(self.model)
-            print("Model converted to SyncBatchNorm for distributed training")
+            print(f"[Rank {self.args.local_rank}] Model converted to SyncBatchNorm for distributed training")
+            print(f"[Rank {self.args.local_rank}] About to wrap with DDP...")
             self.model = DDP(self.model, device_ids=[self.args.local_rank],find_unused_parameters=True)
+            print(f"[Rank {self.args.local_rank}] DDP wrapper completed successfully!")
 
         if not self.args.evaluate_only:
             self._init()
