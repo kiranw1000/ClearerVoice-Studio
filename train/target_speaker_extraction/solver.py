@@ -11,6 +11,7 @@ from losses.metrics import SDR, cal_SISNR
 from pystoi import stoi
 from pesq import pesq
 from scipy.signal import resample
+from tqdm import tqdm
 
 class Solver(object):
     def __init__(self, args, model, optimizer, train_data, validation_data, test_data):
@@ -115,6 +116,7 @@ class Solver(object):
             # Train
             self.model.train()
             start = time.time()
+            print("Starting epoch: {}".format(self.epoch))
             tr_loss = self._run_one_epoch(data_loader = self.train_data)
             if self.args.distributed: tr_loss = self._reduce_tensor(tr_loss)
             if self.print: print('Train Summary | End of Epoch {0} | Time {1:.2f}s | ''Train Loss {2:.3f}'.format(self.epoch, time.time() - start, tr_loss))
@@ -183,7 +185,7 @@ class Solver(object):
         total_loss = 0
         self.accu_count = 0
         self.optimizer.zero_grad()
-        for i, (a_mix, a_tgt, ref_tgt) in enumerate(data_loader):
+        for i, (a_mix, a_tgt, ref_tgt) in enumerate(tqdm(data_loader)):
             a_mix = a_mix.to(self.args.device)
             a_tgt = a_tgt.to(self.args.device)
             
