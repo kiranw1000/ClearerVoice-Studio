@@ -2,8 +2,8 @@
 
 #####
 # Modify these lines
-gpu_id=0,1,2,3												# Visible GPUs
-n_gpu=4												# Number of GPU used for training
+gpu_id=0,1,2,3,4,5,6,7												# Visible GPUs
+n_gpu=8												# Number of GPU used for training
 checkpoint_dir=''									# Leave empty if it's a new training, otherwise provide the name as 'checkpoints/log_...'
 config_pth=$1		# The config file, only used if it's a new training
 #####
