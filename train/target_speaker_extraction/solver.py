@@ -237,10 +237,11 @@ class Solver(object):
             # print(loss)
 
             total_loss += loss.clone().detach()
-            wandb.log({"train_loss": loss}, step=self.global_step) if state=='train' and self.args.wandb else None
+            wandb.log({"train_loss": loss}, step=self.global_step) if state=='train' and self.args.wandb and (self.args.distributed and self.args.local_rank ==0) or not self.args.distributed else None
             self.global_step += 1 if state=='train' else 0
 
-        wandb.log({"train_loss": total_loss / (i+1)}, step=self.global_step) if state=='train' and self.args.wandb else None
+        if (self.args.distributed and self.args.local_rank ==0) or not self.args.distributed and self.args.wandb and state=='train':
+            wandb.log({"train_loss": total_loss / (i+1)}, step=self.global_step)
 
         return total_loss / (i+1)
 
