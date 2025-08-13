@@ -1,5 +1,5 @@
 import time
-import torch
+import torch, wandb
 from torch.utils.tensorboard import SummaryWriter
 import torch.nn.functional as F
 from torch.nn.parallel import DistributedDataParallel as DDP
@@ -45,6 +45,8 @@ class Solver(object):
         if not self.args.evaluate_only:
             self._init()
 
+        self.global_step = 0
+
 
     def _init(self):
         self.halving = False
@@ -62,6 +64,8 @@ class Solver(object):
         else:
             if self.print: print('Start new training from scratch')
         self._save_model(self.args.checkpoint_dir+"/last_checkpoint.pt")
+
+        self.global_step = 0
 
         
     def _load_model(self, path, load_optimizer=False, load_training_stat=False):
@@ -118,6 +122,17 @@ class Solver(object):
             
 
     def train(self):
+        if self.args.wandb:
+            print("Loading wandb config")
+            wandb.login(key=self.args.wandb.key)
+            config = {
+                "filtering": self.args.wandb.filtering,
+                "resampling": self.args.wandb.resampling,
+                "channel selection": self.args.wandb.channel_selection,
+                "artifact removal": self.args.wandb.artifact_removal,
+                "dataset": self.args.wandb.dataset
+            }
+            run = wandb.init(project="neuroheed", config=config, name=self.args.checkpoint_dir.split('/')[-1])
         print("Training started")
         for self.epoch in range(self.start_epoch, self.args.max_epoch+1):
             if self.args.distributed: self.args.train_sampler.set_epoch(self.epoch)
@@ -187,6 +202,7 @@ class Solver(object):
                 if find_best_model:
                     self._save_model(self.args.checkpoint_dir+"/last_best_checkpoint.pt")
                     print("Fund new best model, dict saved")
+        self.global_step = 0
 
 
     def _run_one_epoch(self, data_loader, state='train'):
@@ -199,11 +215,6 @@ class Solver(object):
             
             a_tgt_est = self.model(a_mix, ref_tgt)
             loss = self.loss(a_tgt, a_tgt_est)
-
-            # Monitor memory usage every 100 iterations
-            if i % 100 == 0 and self.args.distributed and self.args.local_rank == 0:
-                gpu_memory = torch.cuda.memory_allocated(self.args.device) / 1024**3
-                print(f"Iteration {i}: GPU memory usage: {gpu_memory:.2f} GB")
 
             if state=='train':
                 if self.args.accu_grad:
@@ -226,6 +237,8 @@ class Solver(object):
             # print(loss)
 
             total_loss += loss.clone().detach()
+            wandb.log({"train_loss": loss}, step=self.global_step) if state=='train' and self.args.wandb else None
+            self.global_step += 1 if state=='train' else 0
             
         return total_loss / (i+1)
 
