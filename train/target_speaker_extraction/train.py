@@ -112,6 +112,7 @@ if __name__ == '__main__':
     parser.add_argument('--gumbel_selection', type=int, default=False, help='whether to use gumbel selection layer')
     parser.add_argument('--subjects', type=int, default=18, help='number of subjects')
     parser.add_argument('--trials', type=int, default=60, help='number of trials per subject')
+    parser.add_argument('--wandb', type=dict, help='wandb configuration')
 
     # Distributed training
     parser.add_argument("--local-rank", default=0, type=int)
