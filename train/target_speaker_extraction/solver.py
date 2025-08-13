@@ -132,7 +132,7 @@ class Solver(object):
                 "artifact removal": self.args.wandb.artifact_removal,
                 "dataset": self.args.wandb.dataset
             }
-            run = wandb.init(project="neuroheed", config=config, name=self.args.checkpoint_dir.split('/')[-1])
+            run = wandb.init(project="NeuroHeed Training", config=config, name=self.args.checkpoint_dir.split('/')[-1])
         print("Training started")
         for self.epoch in range(self.start_epoch, self.args.max_epoch+1):
             if self.args.distributed: self.args.train_sampler.set_epoch(self.epoch)
