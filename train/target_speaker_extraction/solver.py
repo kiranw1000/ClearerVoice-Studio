@@ -239,7 +239,9 @@ class Solver(object):
             total_loss += loss.clone().detach()
             wandb.log({"train_loss": loss}, step=self.global_step) if state=='train' and self.args.wandb else None
             self.global_step += 1 if state=='train' else 0
-            
+
+        wandb.log({"train_loss": total_loss / (i+1)}, step=self.global_step) if state=='train' and self.args.wandb else None
+
         return total_loss / (i+1)
 
     def _reduce_tensor(self, tensor):
