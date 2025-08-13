@@ -152,6 +152,8 @@ class Solver(object):
             with torch.no_grad():
                 val_loss = self._run_one_epoch(data_loader = self.validation_data, state='val')
                 if self.args.distributed: val_loss = self._reduce_tensor(val_loss)
+            if self.args.wandb and (self.args.distributed and self.args.local_rank ==0) or not self.args.distributed:
+                wandb.log({"epoch_val_loss": val_loss, "epoch": self.epoch}, step=self.global_step)
             if self.print: print('Valid Summary | End of Epoch {0} | Time {1:.2f}s | '
                       'Valid Loss {2:.3f}'.format(
                           self.epoch, time.time() - start, val_loss))
@@ -163,6 +165,8 @@ class Solver(object):
             with torch.no_grad():
                 test_loss = self._run_one_epoch(data_loader = self.test_data, state='test')
                 if self.args.distributed: test_loss = self._reduce_tensor(test_loss)
+            if self.args.wandb and (self.args.distributed and self.args.local_rank ==0) or not self.args.distributed:
+                wandb.log({"epoch_test_loss": test_loss, "epoch": self.epoch}, step=self.global_step)
             if self.print: print('Test Summary | End of Epoch {0} | Time {1:.2f}s | '
                       'Test Loss {2:.3f}'.format(
                           self.epoch, time.time() - start, test_loss))
