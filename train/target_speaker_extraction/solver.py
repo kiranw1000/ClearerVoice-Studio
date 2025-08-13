@@ -122,7 +122,7 @@ class Solver(object):
             
 
     def train(self):
-        if self.args.wandb:
+        if self.args.wandb and (self.args.distributed and self.args.local_rank ==0) or not self.args.distributed:
             print("Loading wandb config")
             wandb.login(key=self.args.wandb.key)
             config = {
