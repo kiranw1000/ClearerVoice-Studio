@@ -241,7 +241,7 @@ class Solver(object):
             self.global_step += 1 if state=='train' else 0
 
         if (self.args.distributed and self.args.local_rank ==0) or not self.args.distributed and self.args.wandb and state=='train':
-            wandb.log({"train_loss": total_loss / (i+1)}, step=self.global_step)
+            wandb.log({"epoch_train_loss": total_loss / (i+1), "epoch": self.epoch}, step=self.global_step)
 
         return total_loss / (i+1)
 
