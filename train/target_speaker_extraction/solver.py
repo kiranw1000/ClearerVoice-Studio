@@ -163,8 +163,8 @@ class Solver(object):
             with torch.no_grad():
                 test_loss = self._run_one_epoch(data_loader = self.test_data, state='test')
                 if self.args.distributed: test_loss = self._reduce_tensor(test_loss)
-            if self.args.wandb and (self.args.distributed and self.args.local_rank ==0) or not self.args.distributed:
-            if self.print: print('Test Summary | End of Epoch {0} | Time {1:.2f}s | '
+            if self.print: 
+                print('Test Summary | End of Epoch {0} | Time {1:.2f}s | '
                       'Test Loss {2:.3f}'.format(
                           self.epoch, time.time() - start, test_loss))
 
