@@ -198,6 +198,9 @@ class rnn(nn.Module):
         eeg = self.po_encoding(eeg.transpose(0,1))
         eeg = self.eeg_net(eeg)
         eeg = eeg.transpose(0,1).transpose(1,2)
+        if eeg.shape[-1] == 0:
+            raise ValueError(f"eeg tensor has zero length: shape={eeg.shape}")
+
         eeg = F.interpolate(eeg, (D), mode='linear')
         x = torch.cat((x, eeg),1)
         x  = self.fusion(x)
