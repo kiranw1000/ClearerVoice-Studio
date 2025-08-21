@@ -6,6 +6,7 @@ gpu_id=0,1,2,3												# Visible GPUs
 n_gpu=4												# Number of GPU used for training
 checkpoint_dir=''									# Leave empty if it's a new training, otherwise provide the name as 'checkpoints/log_...'
 config_pth=$1		# The config file, only used if it's a new training
+name=${2:-''}
 #####
 
 
@@ -13,7 +14,7 @@ config_pth=$1		# The config file, only used if it's a new training
 eval "$(conda shell.bash hook)"
 conda activate aspire
 if [ -z ${checkpoint_dir} ]; then
-	checkpoint_dir='checkpoints/log_'$(date '+%Y-%m-%d(%H:%M:%S)')
+	checkpoint_dir='checkpoints/log_'$(date '+%Y-%m-%d(%H:%M:%S)')$(name)
 	train_from_last_checkpoint=0
 	mkdir -p ${checkpoint_dir}
 	cp $config_pth ${checkpoint_dir}/config.yaml
