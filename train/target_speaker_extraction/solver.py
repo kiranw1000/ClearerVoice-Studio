@@ -287,8 +287,8 @@ class Solver(object):
 
                 new_samples_mix = a_mix.shape[0]*16000/self.args.audio_sr
                 new_samples_tgt = a_tgt.shape[0]*16000/self.args.audio_sr
-                a_tgt = resample(a_tgt.numpy(), new_samples_tgt, axis=-1)
-                a_mix = resample(a_mix.numpy(), new_samples_mix, axis=-1)
+                a_tgt = resample(a_tgt, new_samples_tgt, axis=-1)
+                a_mix = resample(a_mix, new_samples_mix, axis=-1)
                 a_tgt_est = a_tgt_est/np.max(np.abs(a_tgt_est))
                 pesqi =  (pesq(self.args.audio_sr, a_tgt, a_tgt_est, 'wb') - pesq(self.args.audio_sr, a_tgt, a_mix, 'wb'))
                 avg_pesqi += pesqi
