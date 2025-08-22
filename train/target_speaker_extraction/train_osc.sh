@@ -14,7 +14,7 @@ name=${2:-''}
 eval "$(conda shell.bash hook)"
 conda activate aspire
 if [ -z ${checkpoint_dir} ]; then
-	checkpoint_dir='checkpoints/log_'$(date '+%Y-%m-%d(%H:%M:%S)')$(name)
+	checkpoint_dir='checkpoints/log_'$(date '+%Y-%m-%d(%H:%M:%S)')${name}
 	train_from_last_checkpoint=0
 	mkdir -p ${checkpoint_dir}
 	cp $config_pth ${checkpoint_dir}/config.yaml
