@@ -218,8 +218,10 @@ class Solver(object):
         for i, (a_mix, a_tgt, ref_tgt) in enumerate(tqdm(data_loader)):
             a_mix = a_mix.to(self.args.device)
             a_tgt = a_tgt.to(self.args.device)
+            print(a_mix.shape, a_tgt.shape, ref_tgt.shape)
             
             a_tgt_est = self.model(a_mix, ref_tgt)
+            print(a_tgt_est.shape)
             assert a_tgt_est.shape == a_tgt.shape, f"Output shape {a_tgt_est.shape} doesn't match target shape {a_tgt.shape}"
             loss = self.loss(a_tgt, a_tgt_est)
 
