@@ -243,6 +243,8 @@ class Solver(object):
             # print(loss)
 
             total_loss += loss.clone().detach()
+            if loss > 0:
+                print(loss)
             wandb.log({"train_loss": loss}, step=self.global_step) if state=='train' and self.args.wandb and (self.args.distributed and self.args.local_rank ==0) or not self.args.distributed else None
             self.global_step += 1 if state=='train' else 0
 
