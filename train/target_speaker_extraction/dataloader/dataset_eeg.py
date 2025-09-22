@@ -70,45 +70,53 @@ class dataset_eeg(data.Dataset):
 
 
     def __getitem__(self, index):
-        mix_audios=[]
-        tgt_audios=[]
-        tgt_eegs=[]
-        
+        mix_audios = []
+        tgt_audios = []
+        tgt_eegs = []
+
         batch_lst = self.minibatch[index]
-        min_length_second = float(batch_lst[-1].split(',')[-1])      # truncate to the shortest utterance in the batch
-        min_length_eeg = math.floor(min_length_second*self.ref_sr)
-        min_length_audio = math.floor(min_length_second*self.audio_sr)
-        min_length_eeg = min(min_length_eeg, self.max_length*self.ref_sr)
-        min_length_audio = min(min_length_audio, self.max_length*self.audio_sr)
+        min_length_second = float(batch_lst[-1].split(',')[-1])  # truncate to the shortest utterance in the batch
+        min_length_eeg = math.floor(min_length_second * self.ref_sr)
+        min_length_audio = math.floor(min_length_second * self.audio_sr)
+        min_length_eeg = min(min_length_eeg, self.max_length * self.ref_sr)
+        min_length_audio = min(min_length_audio, self.max_length * self.audio_sr)
 
         for line_cache in batch_lst:
-            line=line_cache.split(',')
+            line = line_cache.split(',')
 
-            # load target eeg
+            # Load target EEG
             subject, trial = line[1], line[2]
-            eeg_data = self.eeg_dict[(int(subject),int(trial))]
-            eeg_start = int(float(line[4])*self.ref_sr)
+            eeg_data = self.eeg_dict[(int(subject), int(trial))]
+            eeg_start = int(float(line[4]) * self.ref_sr)
             eeg_end = eeg_start + min_length_eeg
-            eeg_tgt = eeg_data[eeg_start:eeg_end,:]
+            eeg_tgt = eeg_data[eeg_start:eeg_end, :]
 
-            # load tgt audio
+            # Load target audio
             tgt_audio_path = self.audio_direc + line[3]
             start = float(line[4]) * self.audio_sr
             end = start + min_length_audio
+            if not os.path.exists(tgt_audio_path):
+                raise FileNotFoundError(f"Target audio file not found: {tgt_audio_path}")
             a_tgt, _ = sf.read(tgt_audio_path, start=int(start), stop=int(end), dtype='float32')
+            if a_tgt.size == 0:
+                raise ValueError(f"Empty target audio data. Path: {tgt_audio_path}, Start: {start}, End: {end}")
 
-            # load int eeg
+            # Load interfering audio
             int_audio_path = self.audio_direc + line[6]
             start = float(line[7]) * self.audio_sr
             end = start + min_length_audio
+            if not os.path.exists(int_audio_path):
+                raise FileNotFoundError(f"Interfering audio file not found: {int_audio_path}")
             a_int, _ = sf.read(int_audio_path, start=int(start), stop=int(end), dtype='float32')
+            if a_int.size == 0:
+                raise ValueError(f"Empty interfering audio data. Path: {int_audio_path}, Start: {start}, End: {end}")
 
-            # training snr augmentation
+            # Training SNR augmentation
             if float(line[8]) != 0:
                 target_power = np.linalg.norm(a_tgt, 2)**2 / a_tgt.size
                 intef_power = np.linalg.norm(a_int, 2)**2 / a_int.size
-                a_int *= np.sqrt(target_power/intef_power)
-                snr_1 = (10**(float(line[8])/20))
+                a_int *= np.sqrt(target_power / intef_power)
+                snr_1 = (10**(float(line[8]) / 20))
 
                 max_snr = max(1, snr_1)
                 a_tgt /= max_snr
@@ -117,7 +125,7 @@ class dataset_eeg(data.Dataset):
 
             a_mix = a_tgt + a_int
 
-            # audio normalization
+            # Audio normalization
             max_val = np.max(np.abs(a_mix))
             if max_val > 1:
                 a_mix /= max_val
