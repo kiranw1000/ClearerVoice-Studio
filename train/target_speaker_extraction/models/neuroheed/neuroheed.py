@@ -31,9 +31,13 @@ class neuroheed(nn.Module):
     def forward(self, mixture, eeg, reference=None):
         eeg = eeg.to(self.args.device)
         mixture = mixture.to(self.args.device)
+        eeg = torch.clamp(eeg, -1e6, 1e6)
+        mixture = torch.clamp(mixture, -1e6, 1e6)
 
         mixture_w = self.encoder(mixture)
         est_mask = self.separator(mixture_w, eeg, reference, mixture)
+        if torch.isnan(est_mask).any():
+            raise ValueError(f"NaN in est_mask: {est_mask.shape}")
         est_mask = est_mask.to(self.args.device)
         mixture_w = mixture_w.to(self.args.device)
         est_source = self.decoder(mixture_w, est_mask)
@@ -200,10 +204,18 @@ class rnn(nn.Module):
         eeg = eeg.transpose(0,1).transpose(1,2)
         if eeg.shape[-1] == 0:
             raise ValueError(f"eeg tensor has zero length: shape={eeg.shape}")
+        if torch.isnan(eeg).any():
+            raise ValueError(f"NaN in EEG after transformer: {eeg.shape}")
+
 
         eeg = F.interpolate(eeg, (D), mode='linear')
+        if torch.isnan(eeg).any():
+            raise ValueError(f"NaN in EEG after interpolate: {eeg.shape}")
+
         x = torch.cat((x, eeg),1)
         x  = self.fusion(x)
+        if torch.isnan(x).any():
+            raise ValueError(f"NaN after fusion: {x.shape}")
 
 
         x, gap = self._Segmentation(x, self.K) # [M, B, k, S]
@@ -356,7 +368,7 @@ def overlap_and_add(signal, frame_step):
     subframe_signal = subframe_signal.to(signal.device)  # Ensure subframe_signal is on the same device as signal
 
     frame = torch.arange(0, output_subframes).unfold(0, subframes_per_frame, subframe_step)
-    frame = signal.new_tensor(frame).long().cuda()  # signal may in GPU or CPU
+    frame = signal.new_tensor(frame).long()  # signal may in GPU or CPU
     frame = frame.contiguous().view(-1)
     frame = frame.to(signal.device)  # Ensure frame is on the same device as signal
 
