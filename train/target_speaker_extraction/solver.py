@@ -5,6 +5,7 @@ import torch.nn.functional as F
 from torch.nn.parallel import DistributedDataParallel as DDP
 import torch.distributed as dist
 import numpy as np
+from torch.profiler import profile, ProfilerActivity, record_function
 
 from losses.loss_function import loss_wrapper
 from losses.metrics import SDR, cal_SISNR
@@ -135,80 +136,85 @@ class Solver(object):
             name = self.args.checkpoint_dir.split('/')[-1]
             run = wandb.init(project="NeuroHeed Training", config=config, name=name)
         print("Training started")
-        for self.epoch in range(self.start_epoch, self.args.max_epoch+1):
-            if self.args.distributed: self.args.train_sampler.set_epoch(self.epoch)
-            # Train
-            self.model.train()
-            start = time.time()
-            print("Starting epoch: {}".format(self.epoch))
-            tr_loss = self._run_one_epoch(data_loader = self.train_data)
-            if self.args.distributed: tr_loss = self._reduce_tensor(tr_loss)
-            if self.print: print('Train Summary | End of Epoch {0} | Time {1:.2f}s | ''Train Loss {2:.3f}'.format(self.epoch, time.time() - start, tr_loss))
+        activities = [ProfilerActivity.CPU]
+        if torch.cuda.is_available():
+            activities.append(ProfilerActivity.CUDA)
+        with profile(activities=activities, profile_memory=True) as prof:
+            for self.epoch in range(self.start_epoch, self.args.max_epoch+1):
+                if self.args.distributed: self.args.train_sampler.set_epoch(self.epoch)
+                # Train
+                self.model.train()
+                start = time.time()
+                print("Starting epoch: {}".format(self.epoch))
+                tr_loss = self._run_one_epoch(data_loader = self.train_data)
+                if self.args.distributed: tr_loss = self._reduce_tensor(tr_loss)
+                if self.print: print('Train Summary | End of Epoch {0} | Time {1:.2f}s | ''Train Loss {2:.3f}'.format(self.epoch, time.time() - start, tr_loss))
 
-            # Validation
-            self.model.eval()
-            start = time.time()
-            with torch.no_grad():
-                val_loss = self._run_one_epoch(data_loader = self.validation_data, state='val')
-                if self.args.distributed: val_loss = self._reduce_tensor(val_loss)
-            if self.print: print('Valid Summary | End of Epoch {0} | Time {1:.2f}s | '
-                      'Valid Loss {2:.3f}'.format(
-                          self.epoch, time.time() - start, val_loss))
-
-
-            # Test
-            self.model.eval()
-            start = time.time()
-            with torch.no_grad():
-                test_loss = self._run_one_epoch(data_loader = self.test_data, state='test')
-                if self.args.distributed: test_loss = self._reduce_tensor(test_loss)
-            if self.print: 
-                print('Test Summary | End of Epoch {0} | Time {1:.2f}s | '
-                      'Test Loss {2:.3f}'.format(
-                          self.epoch, time.time() - start, test_loss))
+                # Validation
+                self.model.eval()
+                start = time.time()
+                with torch.no_grad():
+                    val_loss = self._run_one_epoch(data_loader = self.validation_data, state='val')
+                    if self.args.distributed: val_loss = self._reduce_tensor(val_loss)
+                if self.print: print('Valid Summary | End of Epoch {0} | Time {1:.2f}s | '
+                        'Valid Loss {2:.3f}'.format(
+                            self.epoch, time.time() - start, val_loss))
 
 
-            # Check whether to early stop and to reduce learning rate
-            find_best_model = False
-            if val_loss >= self.best_val_loss:
-                self.val_no_impv += 1
-                if self.val_no_impv == 5:
-                    self.halving = True
-                elif self.val_no_impv >= 10:
-                    if self.print: print("No imporvement for 10 epochs, early stopping.")
-                    break
-            else:
-                self.val_no_impv = 0
-                self.best_val_loss = val_loss
-                find_best_model=True
+                # Test
+                self.model.eval()
+                start = time.time()
+                with torch.no_grad():
+                    test_loss = self._run_one_epoch(data_loader = self.test_data, state='test')
+                    if self.args.distributed: test_loss = self._reduce_tensor(test_loss)
+                if self.print: 
+                    print('Test Summary | End of Epoch {0} | Time {1:.2f}s | '
+                        'Test Loss {2:.3f}'.format(
+                            self.epoch, time.time() - start, test_loss))
 
-            # Halfing the learning rate
-            if self.halving:
-                self.halving = False
-                self._load_model(f'{self.args.checkpoint_dir}/last_best_checkpoint.pt', load_optimizer=True)
-                if self.print: print('reload weights and optimizer from last best checkpoint')
 
-                optim_state = self.optimizer.state_dict()
-                optim_state['param_groups'][0]['lr'] *= 0.5
-                self.optimizer.load_state_dict(optim_state)
-                if self.print: print('Learning rate adjusted to: {lr:.6f}'.format(lr=optim_state['param_groups'][0]['lr']))
-                
+                # Check whether to early stop and to reduce learning rate
+                find_best_model = False
+                if val_loss >= self.best_val_loss:
+                    self.val_no_impv += 1
+                    if self.val_no_impv == 5:
+                        self.halving = True
+                    elif self.val_no_impv >= 10:
+                        if self.print: print("No imporvement for 10 epochs, early stopping.")
+                        break
+                else:
+                    self.val_no_impv = 0
+                    self.best_val_loss = val_loss
+                    find_best_model=True
 
-            if self.print:
-                # Tensorboard logging
-                self.writer.add_scalar('Train_loss', tr_loss, self.epoch)
-                self.writer.add_scalar('Validation_loss', val_loss, self.epoch)
-                self.writer.add_scalar('Test_loss', test_loss, self.epoch)
+                # Halfing the learning rate
+                if self.halving:
+                    self.halving = False
+                    self._load_model(f'{self.args.checkpoint_dir}/last_best_checkpoint.pt', load_optimizer=True)
+                    if self.print: print('reload weights and optimizer from last best checkpoint')
 
-                self._save_model(self.args.checkpoint_dir+"/last_checkpoint.pt")
-                if find_best_model:
-                    self._save_model(self.args.checkpoint_dir+"/last_best_checkpoint.pt")
-                    print("Found new best model, dict saved")
-                if self.args.wandb and (self.args.distributed and self.args.local_rank ==0) or not self.args.distributed:
-                    wandb.log({"epoch_train_loss": tr_loss, "epoch": self.epoch}, step=self.global_step)
-                    wandb.log({"epoch_val_loss": val_loss, "epoch": self.epoch}, step=self.global_step)
-                    wandb.log({"epoch_test_loss": test_loss, "epoch": self.epoch}, step=self.global_step)
-        self.global_step = 0
+                    optim_state = self.optimizer.state_dict()
+                    optim_state['param_groups'][0]['lr'] *= 0.5
+                    self.optimizer.load_state_dict(optim_state)
+                    if self.print: print('Learning rate adjusted to: {lr:.6f}'.format(lr=optim_state['param_groups'][0]['lr']))
+                    
+
+                if self.print:
+                    # Tensorboard logging
+                    self.writer.add_scalar('Train_loss', tr_loss, self.epoch)
+                    self.writer.add_scalar('Validation_loss', val_loss, self.epoch)
+                    self.writer.add_scalar('Test_loss', test_loss, self.epoch)
+
+                    self._save_model(self.args.checkpoint_dir+"/last_checkpoint.pt")
+                    if find_best_model:
+                        self._save_model(self.args.checkpoint_dir+"/last_best_checkpoint.pt")
+                        print("Found new best model, dict saved")
+                    if self.args.wandb and (self.args.distributed and self.args.local_rank ==0) or not self.args.distributed:
+                        wandb.log({"epoch_train_loss": tr_loss, "epoch": self.epoch}, step=self.global_step)
+                        wandb.log({"epoch_val_loss": val_loss, "epoch": self.epoch}, step=self.global_step)
+                        wandb.log({"epoch_test_loss": test_loss, "epoch": self.epoch}, step=self.global_step)
+                print(prof.key_averages().table(sort_by="self_cpu_memory_usage", row_limit=10))
+            self.global_step = 0
 
 
     def _run_one_epoch(self, data_loader, state='train'):
