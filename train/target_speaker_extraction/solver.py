@@ -228,7 +228,11 @@ class Solver(object):
             a_tgt_est = self.model(a_mix, ref_tgt)
             assert a_tgt_est.shape == a_tgt.shape, f"Output shape {a_tgt_est.shape} doesn't match target shape {a_tgt.shape}"
             loss = self.loss(a_tgt, a_tgt_est)
-            assert not torch.isnan(loss), "loss is nan"
+            if torch.isnan(loss):
+                torch.save(a_mix, 'mix_debug.pt')
+                torch.save(a_tgt, 'tgt_debug.pt')
+                torch.save(a_tgt_est, 'est_debug.pt')
+                raise ValueError("NaN loss encountered, debug tensors saved to disk.")
             wandb.log({"train_loss": loss}, step=self.global_step) if state=='train' and self.args.wandb and (self.args.distributed and self.args.local_rank ==0) or not self.args.distributed else None
             self.global_step += 1 if state=='train' else 0
 
