@@ -204,12 +204,19 @@ class rnn(nn.Module):
         eeg = self.po_encoding(eeg.transpose(0,1))
         if torch.isnan(eeg).any():
             raise ValueError(f"NaN in EEG after pos encoding: {eeg.shape}")
+        elif torch.isinf(eeg).any():
+            raise ValueError(f"Inf in EEG after pos encoding: {eeg.shape}") 
+        eeg = torch.clamp(eeg, -1e6, 1e6)
         eeg = self.eeg_net(eeg)
         if torch.isnan(eeg).any():
             raise ValueError(f"NaN in EEG after transformer: {eeg.shape}")
+        elif torch.isinf(eeg).any():
+            raise ValueError(f"Inf in EEG after transformer: {eeg.shape}")
         eeg = eeg.transpose(0,1).transpose(1,2)
         if torch.isnan(eeg).any():
             raise ValueError(f"NaN in EEG after transpose: {eeg.shape}")
+        elif torch.isinf(eeg).any():
+            raise ValueError(f"Inf in EEG after transpose: {eeg.shape}")
         if eeg.shape[-1] == 0:
             raise ValueError(f"eeg tensor has zero length: shape={eeg.shape}")
 
