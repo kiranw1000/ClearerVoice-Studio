@@ -208,6 +208,7 @@ class rnn(nn.Module):
             raise ValueError(f"Inf in EEG after pos encoding: {eeg.shape} Count: {torch.isinf(eeg).sum()}")
         eeg = torch.clamp(eeg, -1e6, 1e6)
         eeg = self.eeg_net(eeg)
+        eeg = torch.nan_to_num(eeg, nan=0.0, posinf=1e6, neginf=-1e6)
         if torch.isnan(eeg).any():
             raise ValueError(f"NaN in EEG after transformer: {eeg.shape} Count: {torch.isnan(eeg).sum()}")
         elif torch.isinf(eeg).any():
