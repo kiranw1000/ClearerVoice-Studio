@@ -206,6 +206,8 @@ class rnn(nn.Module):
             raise ValueError(f"NaN in EEG after pos encoding: {eeg.shape} Count: {torch.isnan(eeg).sum()}")
         elif torch.isinf(eeg).any():
             raise ValueError(f"Inf in EEG after pos encoding: {eeg.shape} Count: {torch.isinf(eeg).sum()}")
+        if torch.max(eeg) > 1e4 or torch.min(eeg) < -1e4:
+            raise ValueError(f"EEG values out of range after pos encoding: {eeg.shape} Max: {torch.max(eeg)} Min: {torch.min(eeg)}")
         eeg = self.eeg_net(eeg)
         if torch.isnan(eeg).any():
             raise ValueError(f"NaN in EEG after transformer: {eeg.shape} Count: {torch.isnan(eeg).sum()}")
