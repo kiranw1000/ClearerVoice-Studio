@@ -206,9 +206,7 @@ class rnn(nn.Module):
             raise ValueError(f"NaN in EEG after pos encoding: {eeg.shape} Count: {torch.isnan(eeg).sum()}")
         elif torch.isinf(eeg).any():
             raise ValueError(f"Inf in EEG after pos encoding: {eeg.shape} Count: {torch.isinf(eeg).sum()}")
-        eeg = torch.clamp(eeg, -1e6, 1e6)
         eeg = self.eeg_net(eeg)
-        eeg = torch.nan_to_num(eeg, nan=0.0, posinf=1e6, neginf=-1e6)
         if torch.isnan(eeg).any():
             raise ValueError(f"NaN in EEG after transformer: {eeg.shape} Count: {torch.isnan(eeg).sum()}")
         elif torch.isinf(eeg).any():
@@ -330,7 +328,7 @@ class PositionalEncoding(nn.Module):
         return self.dropout(x)
     
 class PositionalEncodingOdd(nn.Module):
-    def __init__(self, d_model: int, dropout: float = 0.1, max_len: int = 10000):
+    def __init__(self, d_model: int, dropout: float = 0.1, max_len: int = 100000):
         super().__init__()
         self.dropout = nn.Dropout(p=dropout)
 
