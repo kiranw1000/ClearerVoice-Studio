@@ -197,15 +197,21 @@ class rnn(nn.Module):
 
         x = self.layer_norm(x) # [M, N, K]
         x = self.bottleneck_conv1x1(x) # [M, B, K]
+        if torch.isnan(eeg).any():
+            raise ValueError(f"NaN in x after bottleneck_conv1x1: {x.shape}")
 
 
         eeg = self.po_encoding(eeg.transpose(0,1))
+        if torch.isnan(eeg).any():
+            raise ValueError(f"NaN in EEG after pos encoding: {eeg.shape}")
         eeg = self.eeg_net(eeg)
-        eeg = eeg.transpose(0,1).transpose(1,2)
-        if eeg.shape[-1] == 0:
-            raise ValueError(f"eeg tensor has zero length: shape={eeg.shape}")
         if torch.isnan(eeg).any():
             raise ValueError(f"NaN in EEG after transformer: {eeg.shape}")
+        eeg = eeg.transpose(0,1).transpose(1,2)
+        if torch.isnan(eeg).any():
+            raise ValueError(f"NaN in EEG after transpose: {eeg.shape}")
+        if eeg.shape[-1] == 0:
+            raise ValueError(f"eeg tensor has zero length: shape={eeg.shape}")
 
 
         eeg = F.interpolate(eeg, (D), mode='linear')
