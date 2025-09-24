@@ -179,7 +179,7 @@ class rnn(nn.Module):
 
 
         self.po_encoding = PositionalEncodingOdd(d_model=args.network_audio.d_model)
-        encoder_layers = TransformerEncoderLayer(d_model=args.network_audio.d_model, nhead=1, dim_feedforward=args.network_audio.d_model*4)
+        encoder_layers = TransformerEncoderLayer(d_model=args.network_audio.d_model, nhead=1, dim_feedforward=args.network_audio.d_model*4,norm_first=True)
         self.eeg_net = TransformerEncoder(encoder_layers, num_layers=5)
         self.fusion = nn.Conv1d(B+args.network_audio.d_model, B, 1, bias=False)
 
