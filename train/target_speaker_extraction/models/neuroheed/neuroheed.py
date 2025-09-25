@@ -206,8 +206,6 @@ class rnn(nn.Module):
             raise ValueError(f"NaN in EEG after pos encoding: {eeg.shape} Count: {torch.isnan(eeg).sum()}")
         elif torch.isinf(eeg).any():
             raise ValueError(f"Inf in EEG after pos encoding: {eeg.shape} Count: {torch.isinf(eeg).sum()}")
-        if torch.max(eeg) > 1e4 or torch.min(eeg) < -1e4:
-            raise ValueError(f"EEG values out of range after pos encoding: {eeg.shape} Max: {torch.max(eeg)} Min: {torch.min(eeg)}")
         eeg = self.eeg_net(eeg)
         if torch.isnan(eeg).any():
             raise ValueError(f"NaN in EEG after transformer: {eeg.shape} Count: {torch.isnan(eeg).sum()}")
@@ -335,7 +333,7 @@ class PositionalEncodingOdd(nn.Module):
         self.dropout = nn.Dropout(p=dropout)
 
         position = torch.arange(max_len).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model))
+        div_term = torch.exp(torch.arange(0, d_model, 2) * (-math.log(1000.0) / d_model))
         even = lambda p,dt: torch.sin(p * dt)
         odd = lambda p,dt: torch.cos(p * dt)
         pe = torch.zeros(max_len, 1, d_model)
