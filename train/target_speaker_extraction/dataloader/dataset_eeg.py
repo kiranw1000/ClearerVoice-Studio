@@ -89,7 +89,7 @@ class dataset_eeg(data.Dataset):
             eeg_data = self.eeg_dict[(int(subject), int(trial))]
             eeg_start = int(float(line[4]) * self.ref_sr)
             eeg_end = eeg_start + min_length_eeg
-            eeg_tgt = eeg_data[eeg_start:eeg_end, :]
+            eeg_data = eeg_data[eeg_start:eeg_end, :]
 
             # Load target audio
             tgt_audio_path = self.audio_direc + line[3]
@@ -133,7 +133,7 @@ class dataset_eeg(data.Dataset):
 
             mix_audios.append(a_mix)
             tgt_audios.append(a_tgt)
-            tgt_eegs.append(eeg_tgt)
+            tgt_eegs.append(eeg_data)
 
         return np.asarray(mix_audios, dtype=np.float32), np.asarray(tgt_audios, dtype=np.float32), np.asarray(tgt_eegs, dtype=np.float32)
 
