@@ -380,7 +380,9 @@ def overlap_and_add(signal, frame_step):
     subframe_signal = subframe_signal.to(signal.device)  # Ensure subframe_signal is on the same device as signal
 
     frame = torch.arange(0, output_subframes).unfold(0, subframes_per_frame, subframe_step)
-    frame = signal.new_tensor(frame).long().to(signal.device)  # signal may in GPU or CPU
+    frame = signal.new_tensor(frame).long()  # signal may in GPU or CPU
+    if torch.cuda.is_available():
+        frame = frame.cuda()
     frame = frame.contiguous().view(-1)
     frame = frame.to(signal.device)  # Ensure frame is on the same device as signal
 
