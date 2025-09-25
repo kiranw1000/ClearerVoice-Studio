@@ -6,26 +6,29 @@ import torch.nn as nn
 import torch.utils.data as data
 import librosa
 import soundfile as sf
+import pandas as pd
 
 from .utils import DistributedSampler
 import multiprocessing as mp
 
-def load_shared_eegs(args):
+def load_shared_eegs(args, partition='train'):
+    mix_lst=open(args.mix_lst_path).read().splitlines()
+    mix_lst=list(filter(lambda x: x.split(',')[0]==partition, mix_lst))#[:200]
+    mix_lst = sorted(mix_lst, key=lambda data: float(data.split(',')[-1]), reverse=True)
+    trial_list = set([tuple(line.split(",")[1:3]) for line in mix_lst])
     eeg_list = []
-    for subject in range(1, args.subjects + 1):
-        for trial in range(1, args.trials + 1):
-            eeg_path = f'{args.reference_direc}S{subject}Tra{trial}.npy'
-            eeg_data = np.load(eeg_path)
-            shared_eeg = mp.Array('f', eeg_data.flatten())  # Flatten for 1D shared array
-            eeg_list.append((subject, trial, shared_eeg, eeg_data.shape))  # Store shape for reshaping
-    return eeg_list
-
-# ...existing code...
+    for subject, trial in trial_list:
+        eeg_path = f'{args.reference_direc}S{subject}Tra{trial}.npy'
+        eeg_data = np.load(eeg_path)
+        shared_eeg = mp.Array('f', eeg_data.flatten())  # Flatten for 1D shared array
+        eeg_list.append((int(subject), int(trial), shared_eeg, eeg_data.shape))  # Store shape for reshaping
+    return eeg_list, mix_lst
 
 def get_dataloader_eeg(args, partition):
     if args.num_workers > 0:
-        shared_eegs = load_shared_eegs(args)
-        datasets = dataset_eeg_mp(args, partition, shared_eegs)
+        shared_eegs, mix_lst = load_shared_eegs(args, partition=partition)
+        print(f"Loaded {len(shared_eegs)} EEG datasets into shared memory for multiprocessing.")
+        datasets = dataset_eeg_mp(args, partition, shared_eegs, mix_lst)
     else:
         datasets = dataset_eeg(args, partition)
 
@@ -162,7 +165,7 @@ class dataset_eeg(data.Dataset):
 
 
 class dataset_eeg_mp(dataset_eeg):
-    def __init__(self, args, partition, shared_eegs):
+    def __init__(self, args, partition, shared_eegs, mix_lst):
         self.minibatch =[]
         self.args = args
         self.partition = partition
@@ -176,10 +179,6 @@ class dataset_eeg_mp(dataset_eeg):
         self.mix_lst_path = args.mix_lst_path
         self.audio_direc = args.audio_direc
         self.eeg_direc = args.reference_direc
-        
-        mix_lst=open(self.mix_lst_path).read().splitlines()
-        mix_lst=list(filter(lambda x: x.split(',')[0]==partition, mix_lst))#[:200]
-        mix_lst = sorted(mix_lst, key=lambda data: float(data.split(',')[-1]), reverse=True)
         
         start = 0
         while True:
