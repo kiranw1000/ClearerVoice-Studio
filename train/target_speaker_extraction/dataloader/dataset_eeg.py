@@ -10,6 +10,7 @@ import pandas as pd
 
 from .utils import DistributedSampler
 import multiprocessing as mp
+import tqdm
 
 def load_shared_eegs(args, partition='train'):
     mix_lst=open(args.mix_lst_path).read().splitlines()
@@ -17,7 +18,7 @@ def load_shared_eegs(args, partition='train'):
     mix_lst = sorted(mix_lst, key=lambda data: float(data.split(',')[-1]), reverse=True)
     trial_list = set([tuple(line.split(",")[1:3]) for line in mix_lst])
     eeg_list = []
-    for subject, trial in trial_list:
+    for i, (subject, trial) in tqdm.tqdm(enumerate(trial_list), total=len(trial_list), desc="Loading EEG data"):
         eeg_path = f'{args.reference_direc}S{subject}Tra{trial}.npy'
         eeg_data = np.load(eeg_path)
         shared_eeg = mp.Array('f', eeg_data.flatten())  # Flatten for 1D shared array
