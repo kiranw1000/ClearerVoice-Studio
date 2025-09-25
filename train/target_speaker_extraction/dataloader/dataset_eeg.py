@@ -1,5 +1,5 @@
 import numpy as np
-import math, os, csv
+import math, os, csv, ctypes
 
 import torch
 import torch.nn as nn
@@ -8,9 +8,26 @@ import librosa
 import soundfile as sf
 
 from .utils import DistributedSampler
+import multiprocessing as mp
+
+def load_shared_eegs(args):
+    eeg_list = []
+    for subject in range(1, args.subjects + 1):
+        for trial in range(1, args.trials + 1):
+            eeg_path = f'{args.reference_direc}S{subject}Tra{trial}.npy'
+            eeg_data = np.load(eeg_path)
+            shared_eeg = mp.Array('f', eeg_data.flatten())  # Flatten for 1D shared array
+            eeg_list.append((subject, trial, shared_eeg, eeg_data.shape))  # Store shape for reshaping
+    return eeg_list
+
+# ...existing code...
 
 def get_dataloader_eeg(args, partition):
-    datasets = dataset_eeg(args, partition)
+    if args.num_workers > 0:
+        shared_eegs = load_shared_eegs(args)
+        datasets = dataset_eeg_mp(args, partition, shared_eegs)
+    else:
+        datasets = dataset_eeg(args, partition)
 
     sampler = DistributedSampler(
         datasets,
@@ -65,7 +82,7 @@ class dataset_eeg(data.Dataset):
             for trial in range(1,args.trials+1):
                 eeg_path = f'{self.eeg_direc}S{subject}Tra{trial}.npy'
                 eeg_data = np.load(eeg_path)
-                self.eeg_dict[(subject,trial)] = eeg_data
+                self.eeg_dict[(subject,trial)] = (eeg_data, eeg_data.shape)
 
 
 
@@ -86,7 +103,7 @@ class dataset_eeg(data.Dataset):
 
             # Load target EEG
             subject, trial = line[1], line[2]
-            eeg_data = self.eeg_dict[(int(subject), int(trial))]
+            eeg_data = self.get_eeg(int(subject), int(trial))
             eeg_start = int(float(line[4]) * self.ref_sr)
             eeg_end = eeg_start + min_length_eeg
             eeg_data = eeg_data[eeg_start:eeg_end, :]
@@ -137,16 +154,44 @@ class dataset_eeg(data.Dataset):
 
         return np.asarray(mix_audios, dtype=np.float32), np.asarray(tgt_audios, dtype=np.float32), np.asarray(tgt_eegs, dtype=np.float32)
 
+    def get_eeg(self, subject, trial):
+        return self.eeg_dict[(subject, trial)][0]
 
     def __len__(self):
         return len(self.minibatch)
 
 
+class dataset_eeg_mp(dataset_eeg):
+    def __init__(self, args, partition, shared_eegs):
+        self.minibatch =[]
+        self.args = args
+        self.partition = partition
+        self.max_length = args.max_length
+        self.audio_sr=args.audio_sr
+        self.ref_sr=args.ref_sr
+        self.speaker_no=args.speaker_no
+        self.batch_size=args.batch_size
+        self.use_cache = False
 
+        self.mix_lst_path = args.mix_lst_path
+        self.audio_direc = args.audio_direc
+        self.eeg_direc = args.reference_direc
+        
+        mix_lst=open(self.mix_lst_path).read().splitlines()
+        mix_lst=list(filter(lambda x: x.split(',')[0]==partition, mix_lst))#[:200]
+        mix_lst = sorted(mix_lst, key=lambda data: float(data.split(',')[-1]), reverse=True)
+        
+        start = 0
+        while True:
+            end = min(len(mix_lst), start + self.batch_size)
+            self.minibatch.append(mix_lst[start:end])
+            if end == len(mix_lst):
+                break
+            start = end
 
-
-
-
-
-
-
+        self.eeg_dict = {(s, t): (shared, shape) for s, t, shared, shape in shared_eegs}
+        
+    def get_eeg(self, subject, trial):
+        shared_array, shape = self.eeg_dict[(subject, trial)]
+        eeg_data = np.ctypeslib.as_array(shared_array.get_obj()).reshape(shape)
+        return eeg_data
