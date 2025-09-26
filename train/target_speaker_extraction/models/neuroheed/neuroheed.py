@@ -18,9 +18,9 @@ class neuroheed(nn.Module):
         self.args = args
         self.N, self.L, self.B, self.H, self.K, self.R = args.network_audio.N, args.network_audio.L, args.network_audio.B, args.network_audio.H, args.network_audio.K, args.network_audio.R
         
-        self.encoder = Encoder(self.L, self.N)
+        self.encoder = Encoder(self.L, self.N) # Speech Encoder
         self.separator = rnn(self.args, self.N, self.B, self.H, self.K, self.R)
-        self.decoder = Decoder(self.N, self.L)
+        self.decoder = Decoder(self.N, self.L) # Speech Decoder
         if args.gumbel_selection:
             self.selection_layer = SelectionLayer(args.B, args.gumbel_selection)
 
@@ -180,7 +180,7 @@ class rnn(nn.Module):
 
         self.po_encoding = PositionalEncodingOdd(d_model=args.network_audio.d_model)
         encoder_layers = TransformerEncoderLayer(d_model=args.network_audio.d_model, nhead=1, dim_feedforward=args.network_audio.d_model*4,norm_first=True)
-        self.eeg_net = TransformerEncoder(encoder_layers, num_layers=5)
+        self.eeg_net = TransformerEncoder(encoder_layers, num_layers=5) # EEG Encoder
         self.fusion = nn.Conv1d(B+args.network_audio.d_model, B, 1, bias=False)
 
 
