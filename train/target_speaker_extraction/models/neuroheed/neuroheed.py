@@ -168,7 +168,7 @@ class rnn(nn.Module):
         # [M, N, K] -> [M, B, K]
         self.bottleneck_conv1x1 = nn.Conv1d(N, B, 1, bias=False)
 
-        self.dual_rnn = nn.ModuleList([])
+        self.dual_rnn = nn.ModuleList([]) # Speaker Extractor
         for i in range(R):
             self.dual_rnn.append(Dual_RNN_Block(B, H,
                                      rnn_type='LSTM',  dropout=0,
