@@ -208,7 +208,7 @@ class Solver(object):
                     wandb.log({"epoch_train_loss": tr_loss, "epoch": self.epoch}, step=self.global_step)
                     wandb.log({"epoch_val_loss": val_loss, "epoch": self.epoch}, step=self.global_step)
                     wandb.log({"epoch_test_loss": test_loss, "epoch": self.epoch}, step=self.global_step)
-            self.global_step = 0
+        self.global_step = 0
 
 
     def _run_one_epoch(self, data_loader, state='train'):
