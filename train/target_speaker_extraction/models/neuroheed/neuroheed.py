@@ -20,7 +20,9 @@ class neuroheed(nn.Module):
         
         self.encoder = Encoder(self.L, self.N) # Speech Encoder
         self.separator = rnn(self.args, self.N, self.B, self.H, self.K, self.R)
-        self.decoder = Decoder(self.N, self.L) # Speech Decoder
+        self.representation_only = args.representation_only or False
+        if not self.representation_only:
+            self.decoder = Decoder(self.N, self.L) # Speech Decoder
         if args.gumbel_selection:
             self.selection_layer = SelectionLayer(args.B, args.gumbel_selection)
 
@@ -36,6 +38,8 @@ class neuroheed(nn.Module):
 
         mixture_w = self.encoder(mixture)
         est_mask = self.separator(mixture_w, eeg, reference, mixture)
+        if self.representation_only:
+            return est_mask  # [M, B, K]
         if torch.isnan(est_mask).any():
             raise ValueError(f"NaN in est_mask: {est_mask.shape}")
         est_mask = est_mask.to(self.args.device)
@@ -182,6 +186,7 @@ class rnn(nn.Module):
         encoder_layers = TransformerEncoderLayer(d_model=args.network_audio.d_model, nhead=1, dim_feedforward=args.network_audio.d_model*4,norm_first=True)
         self.eeg_net = TransformerEncoder(encoder_layers, num_layers=5) # EEG Encoder
         self.fusion = nn.Conv1d(B+args.network_audio.d_model, B, 1, bias=False)
+        self.representation_only = args.representation_only or False
 
 
     def forward(self, x, eeg, reference, speech):
@@ -191,6 +196,8 @@ class rnn(nn.Module):
             mixture_w: [M, N, K], M is batch size
         returns:
             est_mask: [M, C, N, K]
+            or
+            representation: [M, B, K] if self.representation_only is True
         """
         mixture_w = x
         M, N, D = x.size()
@@ -229,6 +236,8 @@ class rnn(nn.Module):
         if torch.isnan(x).any():
             raise ValueError(f"NaN after fusion: {x.shape}")
 
+        if self.representation_only:
+            return x  # [M, B, K]
 
         x, gap = self._Segmentation(x, self.K) # [M, B, k, S]
 
