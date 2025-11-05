@@ -54,7 +54,12 @@ def load_shared_eegs_contrastive(args, partition='train'):
     mix_lst = pd.read_csv(args.mix_lst_path)
     mix_lst = mix_lst[mix_lst["split"] == partition]
     mix_lst = mix_lst.sort_values(by="length", ascending=False)
-    trial_list = set(zip(mix_lst["subject_1"], mix_lst["trial_1"])).union(set(zip(mix_lst["subject_2"], mix_lst["trial_2"])))
+    if args.pretraining_type == 'subject_contrastive':
+        trial_list = set(zip(mix_lst["subject_1"], mix_lst["trial_1"])).union(set(zip(mix_lst["subject_2"], mix_lst["trial_2"])))
+    elif args.pretraining_type == 'interference_contrastive':
+        trial_list = set(zip(mix_lst["subject_1"], mix_lst["trial_1"])).union(set(zip(mix_lst["subject_1"], mix_lst["trial_2"])))
+    else:
+        raise ValueError(f"Unknown pretraining_type: {args.pretraining_type}")
     eeg_list = []
     for subject, trial in tqdm.tqdm(trial_list, desc=f"Loading EEG data for {partition} partition"):
         eeg_path = f'{args.reference_direc}S{subject}Tra{trial}.npy'
@@ -389,10 +394,17 @@ class dataset_eeg_contrastive(dataset_eeg_mp, data.Dataset):
 
             # Load target EEG
             subject1, trial1 = line["subject_1"], line["trial_1"]
-            eeg_data = self.get_eeg(int(subject1), int(trial1))
+            eeg_data1 = self.get_eeg(int(subject1), int(trial1))
             eeg_start1 = int(float(line["tgt_start_1"]) * self.ref_sr)
             eeg_end1 = eeg_start1 + min_length_eeg
-            eeg_data = eeg_data[eeg_start1:eeg_end1, :]
+            eeg_data1 = eeg_data1[eeg_start1:eeg_end1, :]
+
+            #Load paired EEG (same target, different interference)
+            subject2, trial2 = line["subject_1"], line["trial_2"]
+            eeg_data2 = self.get_eeg(int(subject2), int(trial2))
+            eeg_start2 = int(float(line["tgt_start_2"]) * self.ref_sr)
+            eeg_end2 = eeg_start2 + min_length_eeg
+            eeg_data2 = eeg_data2[eeg_start2:eeg_end2, :]
 
             # Load target audio
             tgt_audio_1_path = self.audio_direc + line["tgt_audio_1"]
@@ -471,8 +483,8 @@ class dataset_eeg_contrastive(dataset_eeg_mp, data.Dataset):
                 
             base_audios.append(a_mix_1)
             pair_audios.append(a_mix_2)
-            base_eegs.append(eeg_data)
-            pair_eegs.append(eeg_data)
+            base_eegs.append(eeg_data1)
+            pair_eegs.append(eeg_data2)
             pair_types.append(line["type"])
         
         eegs = base_eegs + pair_eegs
