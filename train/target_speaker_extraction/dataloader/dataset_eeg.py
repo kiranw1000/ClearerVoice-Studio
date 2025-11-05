@@ -231,6 +231,9 @@ class dataset_eeg_mp(dataset_eeg):
         self.audio_direc = args.audio_direc
         self.eeg_direc = args.reference_direc
         
+        mix_lst = mix_lst[mix_lst["split"] == partition]
+        mix_lst = mix_lst.sort_values(by="length", ascending=False)
+        
         start = 0
         while True:
             end = min(len(mix_lst), start + self.batch_size)
@@ -250,7 +253,6 @@ class dataset_eeg_contrastive(dataset_eeg_mp, data.Dataset):
     def __init__(self, args, partition, shared_eegs, mix_lst):
         super().__init__(args, partition, shared_eegs, mix_lst)
         self.pretraining_type = args.pretraining_type
-        print(self.pretraining_type)
         assert self.pretraining_type in ['subject_contrastive', 'interference_contrastive'], "pretraining_type must be 'subject_contrastive' or 'interference_contrastive'"
         if self.pretraining_type == 'subject_contrastive':
             assert mix_lst.columns.tolist() == ["split", "subject_1", "trial_1", "tgt_audio_1", "tgt_start_1", "int_audio", "int_start", "subject_2", "trial_2", "tgt_audio_2", "tgt_start_2", "type", "snr", "length"]
