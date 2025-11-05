@@ -15,7 +15,7 @@ def contrastive_loss(representations: Annotated[torch.Tensor, "Batch * 2 x Featu
         torch.Tensor: Tensor of shape(B, T) representing the contrastive loss for each time step.
     '''
     assert representations.dim() == 3, f"Representations must be a 3D tensor. Was shape {representations.shape}"
-    assert positive.dim() == 2, f"Positive samples must be a 2D tensor. Was shape {positive.shape}"
+    assert positive.dim() == 1, f"Positive samples must be a 1D tensor. Was shape {positive.shape}"
     B, F, T = representations.shape[0] // 2, representations.shape[1], representations.shape[2]
     assert representations.shape[0] == 2 * B, f"First dimension of representations ({representations.shape[0]}) must be twice the batch size ({2 * B})"
     assert positive.shape[0] == B, f"First dimension of positive ({positive.shape[0]}) must match batch size ({B})"

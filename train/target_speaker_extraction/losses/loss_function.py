@@ -6,6 +6,7 @@ from torch.nn.modules.loss import _Loss
 EPS = 1e-6
 
 from .time_loss import cal_SDR, cal_SISNR
+from .contrastive_loss import contrastive_loss, triplet_loss
 
 class loss_wrapper(_Loss):
     def __init__(self, loss_type):
@@ -27,6 +28,8 @@ class loss_wrapper(_Loss):
             loss = 0 - torch.mean(cal_SISNR(clean, estimate)) + self.stft_loss(clean, estimate)
         elif self.loss_type == 'SpEx-plus':
             loss = self.spex_plus_loss(clean, estimate)
+        elif self.loss_type == 'contrastive':
+            loss = torch.mean(contrastive_loss(clean, positive=estimate))
         else:
             raise NameError('Wrong loss selection')
         
