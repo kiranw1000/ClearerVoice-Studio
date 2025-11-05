@@ -1,4 +1,3 @@
-from torch import dist
 import yamlargparse, os, random
 import numpy as np
 from models.neuroheed.gumbel import SelectionLayer
@@ -71,6 +70,7 @@ def main(args):
 
 
 if __name__ == '__main__':
+    print("Parsing arguments")
     parser = yamlargparse.ArgumentParser("Settings")
     
     # Log and Visulization
@@ -113,6 +113,9 @@ if __name__ == '__main__':
     parser.add_argument('--subjects', type=int, default=18, help='number of subjects')
     parser.add_argument('--trials', type=int, default=60, help='number of trials per subject')
     parser.add_argument('--wandb', type=dict, help='wandb configuration')
+    parser.add_argument('--contrastive', action='store_true', help='whether to use contrastive samples during training')
+    parser.add_argument('--pretraining_type', type=str, default='subject_contrastive', help="Type of contrastive pretraining: 'subject_contrastive' or 'interference_contrastive'", choices=['subject_contrastive', 'interference_contrastive'])
+    parser.add_argument('--cross_attention', action='store_true', help='whether to use cross attention between audio and reference branches')
 
     # Distributed training
     parser.add_argument("--local-rank", default=0, type=int)
@@ -126,6 +129,8 @@ if __name__ == '__main__':
     if 'WORLD_SIZE' in os.environ:
         args.distributed = int(os.environ['WORLD_SIZE']) > 1
         args.world_size = int(os.environ['WORLD_SIZE'])
+    if args.contrastive:
+        args.representation_only = True
     assert torch.backends.cudnn.enabled, "cudnn needs to be enabled"
 
     main(args)

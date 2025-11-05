@@ -215,43 +215,78 @@ class Solver(object):
         total_loss = 0
         self.accu_count = 0
         self.optimizer.zero_grad()
-        for i, (a_mix, a_tgt, ref_tgt) in enumerate(tqdm(data_loader)):
-            a_mix = a_mix.to(self.args.device)
-            a_tgt = a_tgt.to(self.args.device)
-            
-            a_tgt_est = self.model(a_mix, ref_tgt)
-            assert a_tgt_est.shape == a_tgt.shape, f"Output shape {a_tgt_est.shape} doesn't match target shape {a_tgt.shape}"
-            loss = self.loss(a_tgt, a_tgt_est)
-            if torch.isnan(loss):
-                torch.save(a_mix, f'{self.args.checkpoint_dir}/mix_debug.pt')
-                torch.save(a_tgt, f'{self.args.checkpoint_dir}/tgt_debug.pt')
-                torch.save(a_tgt_est, f'{self.args.checkpoint_dir}/est_debug.pt')
-                torch.save(ref_tgt, f'{self.args.checkpoint_dir}/ref_debug.pt')
-                raise ValueError("NaN loss encountered, debug tensors saved to disk.")
-            wandb.log({"train_loss": loss}, step=self.global_step) if state=='train' and self.args.wandb and (self.args.distributed and self.args.local_rank ==0) or not self.args.distributed else None
-            self.global_step += 1 if state=='train' else 0
+        if self.args.contrastive:
+            for i, (audios, eegs, pair_types) in enumerate(tqdm(data_loader)):
 
-            if state=='train':
-                if self.args.accu_grad:
-                    self.accu_count += 1
-                    loss_scaled = loss/(self.args.effec_batch_size / self.args.batch_size)
-                    loss_scaled.backward()
-                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.args.clip_grad_norm)
-                    if self.accu_count == (self.args.effec_batch_size / self.args.batch_size):
+                representations = self.model(audios, eegs)
+                loss = self.loss(representations, pair_types)
+                if torch.isnan(loss):
+                    torch.save(audios, f'{self.args.checkpoint_dir}/mix_debug.pt')
+                    torch.save(representations, f'{self.args.checkpoint_dir}/est_debug.pt')
+                    torch.save(eegs, f'{self.args.checkpoint_dir}/ref_debug.pt')
+                    raise ValueError("NaN loss encountered, debug tensors saved to disk.")
+                wandb.log({"train_loss": loss}, step=self.global_step) if state=='train' and self.args.wandb and (self.args.distributed and self.args.local_rank ==0) or not self.args.distributed else None
+                self.global_step += 1 if state=='train' else 0
+
+                if state=='train':
+                    if self.args.accu_grad:
+                        self.accu_count += 1
+                        loss_scaled = loss/(self.args.effec_batch_size / self.args.batch_size)
+                        loss_scaled.backward()
+                        torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.args.clip_grad_norm)
+                        if self.accu_count == (self.args.effec_batch_size / self.args.batch_size):
+                            if self.args.lr_warmup: self._adjust_lr_warmup()
+                            self.optimizer.step()
+                            self.optimizer.zero_grad()
+                            self.accu_count = 0
+                    else:
+                        loss.backward()
+                        torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.args.clip_grad_norm)
                         if self.args.lr_warmup: self._adjust_lr_warmup()
                         self.optimizer.step()
                         self.optimizer.zero_grad()
-                        self.accu_count = 0
-                else:
-                    loss.backward()
-                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.args.clip_grad_norm)
-                    if self.args.lr_warmup: self._adjust_lr_warmup()
-                    self.optimizer.step()
-                    self.optimizer.zero_grad()
 
-            # print(loss)
+                # print(loss)
 
-            total_loss += loss.clone().detach()
+                total_loss += loss.clone().detach()
+        else:
+            for i, (a_mix, a_tgt, ref_tgt) in enumerate(tqdm(data_loader)):
+                a_mix = a_mix.to(self.args.device)
+                a_tgt = a_tgt.to(self.args.device)
+                
+                a_tgt_est = self.model(a_mix, ref_tgt)
+                assert a_tgt_est.shape == a_tgt.shape, f"Output shape {a_tgt_est.shape} doesn't match target shape {a_tgt.shape}"
+                loss = self.loss(a_tgt, a_tgt_est)
+                if torch.isnan(loss):
+                    torch.save(a_mix, f'{self.args.checkpoint_dir}/mix_debug.pt')
+                    torch.save(a_tgt, f'{self.args.checkpoint_dir}/tgt_debug.pt')
+                    torch.save(a_tgt_est, f'{self.args.checkpoint_dir}/est_debug.pt')
+                    torch.save(ref_tgt, f'{self.args.checkpoint_dir}/ref_debug.pt')
+                    raise ValueError("NaN loss encountered, debug tensors saved to disk.")
+                wandb.log({"train_loss": loss}, step=self.global_step) if state=='train' and self.args.wandb and (self.args.distributed and self.args.local_rank ==0) or not self.args.distributed else None
+                self.global_step += 1 if state=='train' else 0
+
+                if state=='train':
+                    if self.args.accu_grad:
+                        self.accu_count += 1
+                        loss_scaled = loss/(self.args.effec_batch_size / self.args.batch_size)
+                        loss_scaled.backward()
+                        torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.args.clip_grad_norm)
+                        if self.accu_count == (self.args.effec_batch_size / self.args.batch_size):
+                            if self.args.lr_warmup: self._adjust_lr_warmup()
+                            self.optimizer.step()
+                            self.optimizer.zero_grad()
+                            self.accu_count = 0
+                    else:
+                        loss.backward()
+                        torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.args.clip_grad_norm)
+                        if self.args.lr_warmup: self._adjust_lr_warmup()
+                        self.optimizer.step()
+                        self.optimizer.zero_grad()
+
+                # print(loss)
+
+                total_loss += loss.clone().detach()
 
         return total_loss / (i+1)
 
