@@ -253,10 +253,10 @@ class dataset_eeg_contrastive(dataset_eeg_mp, data.Dataset):
         print(self.pretraining_type)
         assert self.pretraining_type in ['subject_contrastive', 'interference_contrastive'], "pretraining_type must be 'subject_contrastive' or 'interference_contrastive'"
         if self.pretraining_type == 'subject_contrastive':
-            assert mix_lst.columns.tolist() == ["split", "subject_1", "trial_1", "tgt_audio_1", "tgt_start_1", "", "int_audio", "int_start", "subject_2", "trial_2", "tgt_audio_2", "tgt_start_2", "type", "snr", "length"]
+            assert mix_lst.columns.tolist() == ["split", "subject_1", "trial_1", "tgt_audio_1", "tgt_start_1", "int_audio", "int_start", "subject_2", "trial_2", "tgt_audio_2", "tgt_start_2", "type", "snr", "length"]
             self.__getitem__ = self.__getitem__subject__
         elif self.pretraining_type == 'interference_contrastive':
-            assert mix_lst.columns.tolist() == ["split", "subject_1", "trial_1", "tgt_audio_1", "tgt_start_1", "", "int_audio_1", "int_start_1", "int_audio_2", "int_start_2", "tgt_audio_2", "tgt_start_2", "type", "snr", "length"]
+            assert mix_lst.columns.tolist() == ["split", "subject_1", "trial_1", "tgt_audio_1", "tgt_start_1", "int_audio_1", "int_start_1", "int_audio_2", "int_start_2", "tgt_audio_2", "tgt_start_2", "type", "snr", "length"]
             self.__getitem__ = self.__getitem__interference__
         else:
             raise ValueError(f"Unknown pretraining_type: {self.pretraining_type}")
