@@ -258,7 +258,6 @@ class dataset_eeg_mp(dataset_eeg):
         min_length_audio = min(min_length_audio, self.max_length * self.audio_sr)
 
         for _, line_cache in batch_lst.iterrows():
-            print(line_cache)
 
             # Load target EEG
             subject, trial = line_cache["subject"], line_cache["trial"]
