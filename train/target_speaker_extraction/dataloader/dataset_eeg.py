@@ -245,7 +245,6 @@ class dataset_eeg_mp(dataset_eeg):
         self.eeg_dict = {(s, t): (shared, shape) for s, t, shared, shape in shared_eegs}
         
     def __getitem__(self, index):
-        print("fetching normal sample")
         mix_audios = []
         tgt_audios = []
         tgt_eegs = []
