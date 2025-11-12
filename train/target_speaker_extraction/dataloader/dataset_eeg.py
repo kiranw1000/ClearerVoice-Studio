@@ -452,7 +452,7 @@ class dataset_eeg_contrastive(dataset_eeg_mp, data.Dataset):
         pair_types = []
 
         batch_lst = self.minibatch[index]
-        min_length_second = float(batch_lst[-1]['length'])  # truncate to the shortest utterance in the batch
+        min_length_second = float(batch_lst.iloc[-1]['length'])  # truncate to the shortest utterance in the batch
         min_length_eeg = math.floor(min_length_second * self.ref_sr)
         min_length_audio = math.floor(min_length_second * self.audio_sr)
         min_length_eeg = min(min_length_eeg, self.max_length * self.ref_sr)
