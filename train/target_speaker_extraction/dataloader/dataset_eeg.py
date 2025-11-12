@@ -445,7 +445,6 @@ class dataset_eeg_contrastive(dataset_eeg_mp, data.Dataset):
         return np.asarray(audios, dtype=np.float32), np.asarray(eegs, dtype=np.float32), np.asarray(pair_types, dtype=np.float32)
 
     def __getitem__interference__(self, index):
-        print("fetching interference contrastive sample")
         base_audios = []
         pair_audios = []
         base_eegs = []
