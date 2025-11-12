@@ -457,8 +457,8 @@ class dataset_eeg_contrastive(dataset_eeg_mp, data.Dataset):
         min_length_audio = math.floor(min_length_second * self.audio_sr)
         min_length_eeg = min(min_length_eeg, self.max_length * self.ref_sr)
         min_length_audio = min(min_length_audio, self.max_length * self.audio_sr)
-        
-        for line in batch_lst:
+
+        for i, line in batch_lst.iterrows():
 
             # Load target EEG
             subject1, trial1 = line["subject_1"], line["trial_1"]
