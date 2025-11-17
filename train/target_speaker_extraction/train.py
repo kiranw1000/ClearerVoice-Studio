@@ -101,6 +101,7 @@ if __name__ == '__main__':
     parser.add_argument('--network_reference', type=dict, help='the nature of auxilary reference signal')
     parser.add_argument('--network_audio', type=dict, help='a dictionary that contains the network parameters')
     parser.add_argument('--init_from', type=str, help='whether to initilize the model weights from a pre-trained checkpoint')
+    parser.add_argument('--freeze_pretrained', type=bool, default=False, help='whether to freeze the pretrained model weights during training')
 
     # others
     parser.add_argument('--mix_lst_path', type=str)
