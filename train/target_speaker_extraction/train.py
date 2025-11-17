@@ -131,6 +131,8 @@ if __name__ == '__main__':
         args.world_size = int(os.environ['WORLD_SIZE'])
     if args.contrastive:
         args.representation_only = True
+    else:
+        args.representation_only = False
     assert torch.backends.cudnn.enabled, "cudnn needs to be enabled"
 
     main(args)

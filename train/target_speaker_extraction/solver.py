@@ -130,7 +130,8 @@ class Solver(object):
                 "resampling": self.args.wandb.resampling,
                 "channel selection": self.args.wandb.channel_selection,
                 "artifact removal": self.args.wandb.artifact_removal,
-                "dataset": self.args.wandb.dataset
+                "dataset": self.args.wandb.dataset,
+                "pretraining": self.args.wandb.pretraining,
             }
             name = self.args.checkpoint_dir.split('/')[-1]
             run = wandb.init(project="NeuroHeed Training", config=config, name=name)
