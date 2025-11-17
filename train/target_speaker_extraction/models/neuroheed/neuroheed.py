@@ -234,9 +234,10 @@ class rnn(nn.Module):
         
         if self.args.cross_attention:
             attn, _ = self.cross_attn(eeg.transpose(1,2), x.transpose(1,2), x.transpose(1,2))
+            attn = attn.transpose(1,2)
             if x.shape != attn.shape:
                 raise ValueError(f"Shape mismatch in cross attention: x={x.shape}, attn={attn.shape}")
-            x = attn.transpose(1,2)
+            x = attn
 
         x = torch.cat((x, eeg),1)
         x  = self.fusion(x)
