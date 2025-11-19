@@ -20,6 +20,11 @@ class neuroheed(nn.Module):
         
         self.encoder = Encoder(self.L, self.N) # Speech Encoder
         self.separator = rnn(self.args, self.N, self.B, self.H, self.K, self.R)
+        if args.freeze_pretrained:
+            for p in self.encoder.parameters():
+                p.requires_grad = False  # Freeze encoder
+            for p in self.separator.parameters():
+                p.requires_grad = False  # Freeze separator
         self.representation_only = args.representation_only or False
         if not self.representation_only:
             self.decoder = Decoder(self.N, self.L) # Speech Decoder
