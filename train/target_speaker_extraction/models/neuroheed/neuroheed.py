@@ -192,6 +192,7 @@ class rnn(nn.Module):
         self.eeg_net = TransformerEncoder(encoder_layers, num_layers=5) # EEG Encoder
         self.fusion = nn.Conv1d(B+args.network_audio.d_model, B, 1, bias=False)
         self.representation_only = args.representation_only or False
+        self.cross_attn = nn.MultiheadAttention(embed_dim=B, num_heads=4, batch_first=True)
 
 
     def forward(self, x, eeg, reference, speech):
@@ -235,6 +236,13 @@ class rnn(nn.Module):
         eeg = F.interpolate(eeg, (D), mode='linear')
         if torch.isnan(eeg).any():
             raise ValueError(f"NaN in EEG after interpolate: {eeg.shape}")
+        
+        if self.args.cross_attention:
+            attn, _ = self.cross_attn(eeg.transpose(1,2), x.transpose(1,2), x.transpose(1,2))
+            attn = attn.transpose(1,2)
+            if x.shape != attn.shape:
+                raise ValueError(f"Shape mismatch in cross attention: x={x.shape}, attn={attn.shape}")
+            x = attn
 
         x = torch.cat((x, eeg),1)
         x  = self.fusion(x)
