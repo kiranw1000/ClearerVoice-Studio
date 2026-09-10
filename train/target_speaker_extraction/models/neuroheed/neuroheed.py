@@ -7,13 +7,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import TransformerEncoder, TransformerEncoderLayer
 from models.neuroheed.gumbel import SelectionLayer
+from ...subject_embedder import SubjectEncodings, SubjectEmbeddingType
 import math
+from enum import Enum
 
 
 EPS = 1e-8
-
 class neuroheed(nn.Module):
-    def __init__(self, args, N=256, L=20, B=64, H=128, K=100, R=6):
+    def __init__(self, args, N=256, L=20, B=64, H=128, K=100, R=6, subject_embeddings:(SubjectEncodings|None)=None):
         super(neuroheed, self).__init__()
         self.args = args
         self.N, self.L, self.B, self.H, self.K, self.R = args.network_audio.N, args.network_audio.L, args.network_audio.B, args.network_audio.H, args.network_audio.K, args.network_audio.R
@@ -29,9 +30,13 @@ class neuroheed(nn.Module):
         for p in self.parameters():
             if p.dim() > 1:
                 nn.init.xavier_normal_(p)
+                
+        self.subject_embeddings = subject_embeddings
 
-    def forward(self, mixture, eeg, reference=None):
+    def forward(self, mixture, eeg, reference=None, subject_id=None):
         eeg = eeg.to(self.args.device)
+        if self.subject_embeddings is not None:
+            eeg = self.subject_embeddings(subject_id, eeg)
         mixture = mixture.to(self.args.device)
         eeg = torch.clamp(eeg, -1e6, 1e6)
         mixture = torch.clamp(mixture, -1e6, 1e6)
@@ -237,7 +242,7 @@ class rnn(nn.Module):
             attn = attn.transpose(1,2)
             if x.shape != attn.shape:
                 raise ValueError(f"Shape mismatch in cross attention: x={x.shape}, attn={attn.shape}")
-            x = attn
+            x += attn
 
         x = torch.cat((x, eeg),1)
         x  = self.fusion(x)
