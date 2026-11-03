@@ -183,7 +183,7 @@ class Solver(object):
                 self.best_val_loss = val_loss
                 find_best_model=True
 
-            # Halfing the learning rate
+            # Halving the learning rate
             if self.halving:
                 self.halving = False
                 self._load_model(f'{self.args.checkpoint_dir}/last_best_checkpoint.pt', load_optimizer=True)

@@ -56,6 +56,21 @@ class neuroheed(nn.Module):
         T_conv = est_source.size(-1)
         est_source = F.pad(est_source, (0, T_origin - T_conv))
         return est_source
+    
+    def freeze_encoder(self):
+        for param in self.encoder.parameters():
+            param.requires_grad = False
+    def freeze_separator(self):
+        for param in self.separator.parameters():
+            param.requires_grad = False
+    def freeze_decoder(self):
+        for param in self.decoder.parameters():
+            param.requires_grad = False
+            
+    def freeze_subject_embeddings(self):
+        if self.subject_embeddings is not None:
+            for param in self.subject_embeddings.parameters():
+                param.requires_grad = False
 
 class Encoder(nn.Module):
     def __init__(self, L, N):

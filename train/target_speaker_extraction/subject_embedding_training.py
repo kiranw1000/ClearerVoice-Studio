@@ -61,7 +61,8 @@ def main(args):
 Phase 1:
 In this phase, we do contrastive pretraining to build discriminatory ability of eeg encoder and subject embeddings. We provide random noise to the audio encoder and aim to learn a mapping from eeg to the latent mask. We do this by using a one of the subject embedding methods, freezing the trained speech encoder, and performing contrastive learning with the eeg encoding, attended speaker encoding, and unattended speaker encoding. We generate the combined eeg audio embedding which acts as the mask. Then we encode both the attended, unattended, and mixed audios, divide the attended and unattended audio encodings by the mixed audio encoding, producing the attended and unattended audio masks. We then compute the contrastive loss between the eeg mask and the attended and unattended audio masks with the attended mask being the positive sample and the unattended mask being the negative sample. The eeg encoder and subject embeddings are trained to minimize this contrastive loss.
 '''
-def phase1():
+def phase1(args: yamlargparse.SimpleNamespace) -> yamlargparse.SimpleNamespace:
+    
     return
 
 '''

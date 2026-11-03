@@ -5,6 +5,7 @@ import torch
 
 from dataloader.dataloader import dataloader_wrapper
 from solver import Solver
+from subject_embedder import Phase1Solver, Phase2Solver, Phase3Solver
 
 
 def main(args):
@@ -45,15 +46,41 @@ def main(args):
     _, test_generator = dataloader_wrapper(args, 'test')
     print("Test sampler: loaded")
     args.train_sampler=train_sampler
-
-
-    solver = Solver(args=args,
+    
+    match args.phase:
+        case "phase1":
+            solver = Phase1Solver(args=args,
                 model = model,
                 optimizer = optimizer,
                 train_data = train_generator,
                 validation_data = val_generator,
                 test_data = test_generator
                 ) 
+        case "phase2":
+            solver = Phase2Solver(args=args,
+                model = model,
+                optimizer = optimizer,
+                train_data = train_generator,
+                validation_data = val_generator,
+                test_data = test_generator
+                ) 
+        case "phase3":
+            solver = Phase3Solver(args=args,
+                model = model,
+                optimizer = optimizer,
+                train_data = train_generator,
+                validation_data = val_generator,
+                test_data = test_generator
+                ) 
+        case _:
+            solver = Solver(args=args,
+                model = model,
+                optimizer = optimizer,
+                train_data = train_generator,
+                validation_data = val_generator,
+                test_data = test_generator
+                )
+
     print("Start training")
     if not args.evaluate_only:
         solver.train()
@@ -119,6 +146,11 @@ if __name__ == '__main__':
 
     # Distributed training
     parser.add_argument("--local-rank", default=0, type=int)
+    
+    # Subject embedding settings
+    parser.add_argument('--subject_embedding_type', type=str, default='FiLM')
+    parser.add_argument('--phase', type=str, help='training phase: phase1, phase2, phase3, or leave blank for standard training')
+    
 
     args = parser.parse_args()
 

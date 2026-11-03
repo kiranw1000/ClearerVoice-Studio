@@ -118,6 +118,9 @@ class dataset_eeg(data.Dataset):
         self.audio_direc = args.audio_direc
         self.eeg_direc = args.reference_direc
         
+        # Save flag for returning interference audio in __getitem__ if needed
+        self.include_interference:bool = args.include_interference if args.include_interference is not None else False
+        
         mix_lst=open(self.mix_lst_path).read().splitlines()
         mix_lst=list(filter(lambda x: x.split(',')[0]==partition, mix_lst))#[:200]
         mix_lst = sorted(mix_lst, key=lambda data: float(data.split(',')[-1]), reverse=True)
@@ -144,6 +147,7 @@ class dataset_eeg(data.Dataset):
         mix_audios = []
         tgt_audios = []
         tgt_eegs = []
+        int_audios = []
 
         batch_lst = self.minibatch[index]
         min_length_second = float(batch_lst[-1].split(',')[-1])  # truncate to the shortest utterance in the batch
@@ -205,6 +209,10 @@ class dataset_eeg(data.Dataset):
             mix_audios.append(a_mix)
             tgt_audios.append(a_tgt)
             tgt_eegs.append(eeg_data)
+            int_audios.append(a_int)
+            
+        if self.include_interference:
+            return np.asarray(mix_audios, dtype=np.float32), np.asarray(tgt_audios, dtype=np.float32), np.asarray(tgt_eegs, dtype=np.float32), np.asarray(int_audios, dtype=np.float32)
 
         return np.asarray(mix_audios, dtype=np.float32), np.asarray(tgt_audios, dtype=np.float32), np.asarray(tgt_eegs, dtype=np.float32)
 
@@ -234,6 +242,9 @@ class dataset_eeg_mp(dataset_eeg):
         mix_lst = mix_lst[mix_lst["split"] == partition]
         mix_lst = mix_lst.sort_values(by="length", ascending=False)
         
+        # Save flag for returning interference audio in __getitem__ if needed
+        self.include_interference:bool = args.include_interference if args.include_interference is not None else False
+        
         start = 0
         while True:
             end = min(len(mix_lst), start + self.batch_size)
@@ -248,6 +259,7 @@ class dataset_eeg_mp(dataset_eeg):
         mix_audios = []
         tgt_audios = []
         tgt_eegs = []
+        int_audios = []
 
         batch_lst = self.minibatch[index]
         min_length_second = float(batch_lst.iloc[-1]["length"])  # truncate to the shortest utterance in the batch
@@ -307,6 +319,10 @@ class dataset_eeg_mp(dataset_eeg):
             mix_audios.append(a_mix)
             tgt_audios.append(a_tgt)
             tgt_eegs.append(eeg_data)
+            int_audios.append(a_int)
+            
+        if self.include_interference:
+            return np.asarray(mix_audios, dtype=np.float32), np.asarray(tgt_audios, dtype=np.float32), np.asarray(tgt_eegs, dtype=np.float32), np.asarray(int_audios, dtype=np.float32)
 
         return np.asarray(mix_audios, dtype=np.float32), np.asarray(tgt_audios, dtype=np.float32), np.asarray(tgt_eegs, dtype=np.float32)
 

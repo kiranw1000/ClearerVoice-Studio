@@ -1,8 +1,14 @@
 # Based on FiLM. Learn subject embeddings and use them to modulate the EEG features in the neuroheed model.
 
 from enum import Enum
+
+import wandb
+
+from tqdm import tqdm
 from torch import nn
+from solver import Solver
 import torch
+from .models.neuroheed.neuroheed import neuroheed
 
 
 class SubjectEmbeddingType(Enum):
@@ -75,3 +81,115 @@ class FiLMNetwork(SubjectEncodings):
         gamma = self.gamma(subject_id)
         beta = self.beta(subject_id)
         return gamma * input + beta
+    
+class Phase1Solver(Solver):
+    def __init__(self, args, model, optimizer, train_data, validation_data, test_data):
+        super().__init__(args, model, optimizer, train_data, validation_data, test_data)
+        self.subject_embedding_type = args.subject_embedding_type
+        self.model.freeze_encoder()
+        self.model.freeze_separator()
+        self.model.freeze_decoder()
+        
+    def _run_one_epoch(self, data_loader, state="train"):
+        total_loss = 0
+        self.accu_count = 0
+        self.optimizer.zero_grad()
+        for i, (eeg, a_mix, a_tgt, a_unatt, subject_id) in enumerate(tqdm(data_loader)):
+            est_mask = self.model(a_mix, eeg, subject_id = subject_id)
+            a_tgt_dif = torch.clamp(a_tgt / a_mix, min=1e-6, max=1.0)
+            a_unatt_dif = torch.clamp(a_unatt / a_mix, min=1e-6, max=1.0)
+            a_tgt_dif_mask = self.model.encoder(a_tgt_dif)
+            a_unatt_dif_mask = self.model.encoder(a_unatt_dif)
+            loss = self.loss(est_mask, a_tgt_dif_mask, a_unatt_dif_mask)
+            wandb.log({"train_loss": loss}, step=self.global_step) if state=='train' and self.args.wandb and (self.args.distributed and self.args.local_rank ==0) or not self.args.distributed else None
+            if state == "train":
+                if self.args.accu_grad:
+                    self.accu_count += 1
+                    loss_scaled = loss/(self.args.effec_batch_size / self.args.batch_size)
+                    loss_scaled.backward()
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.args.clip_grad_norm)
+                    if self.accu_count == (self.args.effec_batch_size / self.args.batch_size):
+                        if self.args.lr_warmup: self._adjust_lr_warmup()
+                        self.optimizer.step()
+                        self.optimizer.zero_grad()
+                        self.accu_count = 0
+                else:
+                    loss.backward()
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.args.clip_grad_norm)
+                    if self.args.lr_warmup: self._adjust_lr_warmup()
+                    self.optimizer.step()
+                    self.optimizer.zero_grad()
+
+        return total_loss / (i+1)
+                    
+class Phase2Solver(Solver):
+    def __init__(self, args, model, optimizer, train_data, validation_data, test_data):
+        super().__init__(args, model, optimizer, train_data, validation_data, test_data)
+        self.subject_embedding_type = args.subject_embedding_type
+        self.model.freeze_encoder()
+        self.model.freeze_separator()
+        self.model.freeze_decoder()
+        
+    def _run_one_epoch(self, data_loader, state="train"):
+        total_loss = 0
+        self.accu_count = 0
+        self.optimizer.zero_grad()
+        for i, (eeg, a_mix, a_tgt, subject_id) in enumerate(tqdm(data_loader)):
+            est_mask = self.model(a_mix, eeg, subject_id = subject_id)
+            a_tgt_dif = torch.clamp(a_tgt / a_mix, min=1e-6, max=1.0)
+            a_tgt_dif_mask = self.model.encoder(a_tgt_dif)
+            loss = self.loss(est_mask, a_tgt_dif_mask)
+            wandb.log({"train_loss": loss}, step=self.global_step) if state=='train' and self.args.wandb and (self.args.distributed and self.args.local_rank ==0) or not self.args.distributed else None
+            if state == "train":
+                if self.args.accu_grad:
+                    self.accu_count += 1
+                    loss_scaled = loss/(self.args.effec_batch_size / self.args.batch_size)
+                    loss_scaled.backward()
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.args.clip_grad_norm)
+                    if self.accu_count == (self.args.effec_batch_size / self.args.batch_size):
+                        if self.args.lr_warmup: self._adjust_lr_warmup()
+                        self.optimizer.step()
+                        self.optimizer.zero_grad()
+                        self.accu_count = 0
+                else:
+                    loss.backward()
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.args.clip_grad_norm)
+                    if self.args.lr_warmup: self._adjust_lr_warmup()
+                    self.optimizer.step()
+                    self.optimizer.zero_grad()
+
+        return total_loss / (i+1)
+    
+class Phase3Solver(Solver):
+    def __init__(self, args, model, optimizer, train_data, validation_data, test_data):
+        super().__init__(args, model, optimizer, train_data, validation_data, test_data)
+        self.subject_embedding_type = args.subject_embedding_type
+        self.model.freeze_subject_embeddings()
+        
+    def _run_one_epoch(self, data_loader, state="train"):
+        total_loss = 0
+        self.accu_count = 0
+        self.optimizer.zero_grad()
+        for i, (eeg, a_mix, a_tgt, subject_id) in enumerate(tqdm(data_loader)):
+            a_tgt_est = self.model(a_mix, eeg, subject_id = subject_id)
+            loss = self.loss(a_tgt_est, a_tgt)
+            wandb.log({"train_loss": loss}, step=self.global_step) if state=='train' and self.args.wandb and (self.args.distributed and self.args.local_rank ==0) or not self.args.distributed else None
+            if state == "train":
+                if self.args.accu_grad:
+                    self.accu_count += 1
+                    loss_scaled = loss/(self.args.effec_batch_size / self.args.batch_size)
+                    loss_scaled.backward()
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.args.clip_grad_norm)
+                    if self.accu_count == (self.args.effec_batch_size / self.args.batch_size):
+                        if self.args.lr_warmup: self._adjust_lr_warmup()
+                        self.optimizer.step()
+                        self.optimizer.zero_grad()
+                        self.accu_count = 0
+                else:
+                    loss.backward()
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.args.clip_grad_norm)
+                    if self.args.lr_warmup: self._adjust_lr_warmup()
+                    self.optimizer.step()
+                    self.optimizer.zero_grad()
+
+        return total_loss / (i+1)
